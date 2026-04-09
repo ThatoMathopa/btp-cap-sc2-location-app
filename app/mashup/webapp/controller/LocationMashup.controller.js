@@ -20,8 +20,8 @@ sap.ui.define([
       const sCaseId = this._getUrlParam('caseId') || '';
       this._getStateModel().setProperty('/caseId', sCaseId);
 
-      // After initial data load, populate Ward & Region dropdowns
-      this.getView().getModel().attachEventOnce('requestCompleted',
+      // Populate Ward & Region dropdowns after model is ready
+      this.getView().getModel().attachMetadataLoaded(
         this._populateDropdowns.bind(this));
     },
 
@@ -34,12 +34,13 @@ sap.ui.define([
 
     onDataReceived(oEvent) {
       this.byId('tableBusy').setVisible(false);
-      const data  = oEvent.getParameter('data');
-      const count = data?.value?.length ?? 0;
+      if (oEvent.getParameter('error')) return;
+      const oBinding = this._getTableBinding();
+      const count    = oBinding ? oBinding.getLength() : 0;
       this._setResultCount(this._i18n('resultCount', [count]));
     },
 
-    // ── Search / Filter (live — fires on every keystroke / selection) ─────────
+    // ── Search / Filter ───────────────────────────────────────────────────────
 
     onLiveSearch() {
       this._applyFilters();
@@ -57,37 +58,36 @@ sap.ui.define([
     _applyFilters() {
       const aFilters = [];
 
-      // 1. Global search — OR across all text fields
+      // Global free-text search across all fields
       const sGlobal = (this.byId('globalSearch').getValue() || '').trim();
       if (sGlobal) {
         aFilters.push(new Filter({
           filters: [
-            new Filter('fullLocationName', FilterOperator.Contains, sGlobal),
-            new Filter('locationName',     FilterOperator.Contains, sGlobal),
-            new Filter('ward',             FilterOperator.Contains, sGlobal),
-            new Filter('region',           FilterOperator.Contains, sGlobal),
-            new Filter('extension',        FilterOperator.Contains, sGlobal)
+            new Filter('LocationName', FilterOperator.Contains, sGlobal),
+            new Filter('Ward',         FilterOperator.Contains, sGlobal),
+            new Filter('Region',       FilterOperator.Contains, sGlobal),
+            new Filter('Extension',    FilterOperator.Contains, sGlobal)
           ],
           and: false
         }));
       }
 
-      // 2. Location Name field
+      // Location Name field
       const sName = (this.byId('filterName').getValue() || '').trim();
       if (sName) {
-        aFilters.push(new Filter('locationName', FilterOperator.Contains, sName));
+        aFilters.push(new Filter('LocationName', FilterOperator.Contains, sName));
       }
 
-      // 3. Ward dropdown
+      // Ward dropdown
       const sWard = this.byId('filterWard').getSelectedKey();
       if (sWard) {
-        aFilters.push(new Filter('ward', FilterOperator.EQ, sWard));
+        aFilters.push(new Filter('Ward', FilterOperator.EQ, sWard));
       }
 
-      // 4. Region dropdown
+      // Region dropdown
       const sRegion = this.byId('filterRegion').getSelectedKey();
       if (sRegion) {
-        aFilters.push(new Filter('region', FilterOperator.EQ, sRegion));
+        aFilters.push(new Filter('Region', FilterOperator.EQ, sRegion));
       }
 
       const oFinal = aFilters.length
@@ -97,17 +97,16 @@ sap.ui.define([
       this._getTableBinding().filter(oFinal ? [oFinal] : []);
     },
 
-    // ── Row press (highlight row) ────────────────────────────────────────────
+    // ── Row press ────────────────────────────────────────────────────────────
 
     onRowPress(oEvent) {
       const oCtx = oEvent.getSource().getBindingContext();
       this._getStateModel().setProperty('/selectedLocation', oCtx.getObject());
     },
 
-    // ── "Use Location" button — writes extension fields to SC2 case ──────────
+    // ── "Use Location" button ─────────────────────────────────────────────────
 
     onUseLocation(oEvent) {
-      // Stop the row-press event from also firing
       oEvent.stopPropagation?.();
 
       const oCtx      = oEvent.getSource().getParent().getBindingContext();
@@ -119,41 +118,55 @@ sap.ui.define([
         return;
       }
 
-      // Confirm before writing
+      const sDisplayName = oLocation.LocationName +
+        (oLocation.Extension ? ` (${oLocation.Extension})` : '');
+
       MessageBox.confirm(
-        this._i18n('confirmUpdate', [oLocation.fullLocationName, sCaseId]),
+        this._i18n('confirmUpdate', [sDisplayName, sCaseId]),
         {
           title:   this._i18n('confirmTitle'),
           onClose: (sAction) => {
             if (sAction === MessageBox.Action.OK) {
-              this._callUpdateAction(sCaseId, oLocation.ID, oLocation.fullLocationName);
+              this._callUpdateAction(
+                sCaseId,
+                oLocation.LocationName,
+                oLocation.Ward,
+                oLocation.Region,
+                oLocation.Extension
+              );
             }
           }
         }
       );
     },
 
-    // ── CAP Action: updateCaseLocation ──────────────────────────────────────
+    // ── CAP Action: updateCaseLocation ────────────────────────────────────────
 
-    async _callUpdateAction(sCaseId, sLocationId, sFullName) {
+    async _callUpdateAction(sCaseId, sLocationName, sWard, sRegion, sExtension) {
       this._setStatus('', 'None');
       this.getView().setBusy(true);
 
       try {
-        // OData V4 unbound action call
         const oModel  = this.getView().getModel();
         const oAction = oModel.bindContext('/updateCaseLocation(...)');
-        oAction.setParameter('caseId',     sCaseId);
-        oAction.setParameter('locationId', sLocationId);
+        oAction.setParameter('caseId',       sCaseId);
+        oAction.setParameter('locationName', sLocationName);
+        oAction.setParameter('ward',         sWard      || '');
+        oAction.setParameter('region',       sRegion    || '');
+        oAction.setParameter('extension',    sExtension || '');
 
         await oAction.execute();
 
-        const oResult = oAction.getBoundContext().getObject();
+        const oResult      = oAction.getBoundContext().getObject();
+        const sDisplayName = sLocationName + (sExtension ? ` (${sExtension})` : '');
         this._setStatus(
-          oResult?.message || this._i18n('updateSuccess', [sFullName, sCaseId]),
+          oResult?.message || this._i18n('updateSuccess', [sDisplayName, sCaseId]),
           'Success'
         );
-        MessageToast.show(this._i18n('updateSuccess', [sFullName, sCaseId]), { duration: 4000 });
+        MessageToast.show(
+          this._i18n('updateSuccess', [sDisplayName, sCaseId]),
+          { duration: 4000 }
+        );
 
       } catch (oError) {
         const sMsg = oError?.error?.message
@@ -166,34 +179,17 @@ sap.ui.define([
       }
     },
 
-    // ── S/4HANA Sync ─────────────────────────────────────────────────────────
+    // ── Refresh (replaces syncFromS4 — data is always live from S4) ──────────
 
     onSync() {
-      MessageBox.confirm(this._i18n('syncConfirm'), {
-        title: this._i18n('syncTitle'),
-        onClose: async (sAction) => {
-          if (sAction !== MessageBox.Action.OK) return;
-
-          this.getView().setBusy(true);
-          try {
-            const oModel  = this.getView().getModel();
-            const oAction = oModel.bindContext('/syncFromS4(...)');
-            await oAction.execute();
-            const sResult = oAction.getBoundContext().getObject()?.value
-              || this._i18n('syncSuccess');
-            MessageToast.show(sResult, { duration: 4000 });
-            this._getTableBinding().refresh();
-            this._populateDropdowns();
-          } catch (oErr) {
-            MessageBox.error(oErr?.error?.message || this._i18n('syncError'));
-          } finally {
-            this.getView().setBusy(false);
-          }
-        }
-      });
+      this.getView().setBusy(true);
+      this._getTableBinding().refresh();
+      this._populateDropdowns();
+      this.getView().setBusy(false);
+      MessageToast.show(this._i18n('syncSuccess'));
     },
 
-    // ── Status strip ─────────────────────────────────────────────────────────
+    // ── Status strip ──────────────────────────────────────────────────────────
 
     onClearStatus() {
       this._setStatus('', 'None');
@@ -205,47 +201,43 @@ sap.ui.define([
       oState.setProperty('/statusState',   sState);
     },
 
-    // ── Populate Ward / Region dropdowns from live data ──────────────────────
+    // ── Populate Ward / Region dropdowns ─────────────────────────────────────
 
     _populateDropdowns() {
-      const oModel    = this.getView().getModel();
-      const oWardSel  = this.byId('filterWard');
-      const oRegSel   = this.byId('filterRegion');
+      const oModel   = this.getView().getModel();
+      const oWardSel = this.byId('filterWard');
+      const oRegSel  = this.byId('filterRegion');
 
-      // Remove all items except the first "All" item
       const clearKeepFirst = (oSel) => {
         while (oSel.getItems().length > 1) oSel.removeItem(1);
       };
 
-      // Read distinct Wards
-      oModel.read('/Locations', {
-        urlParameters: { $select: 'ward', $orderby: 'ward asc' },
-        success: ({ results }) => {
+      // OData V4: use bindList + requestContexts
+      oModel.bindList('/Locations', null, null, null, { $select: 'Ward' })
+        .requestContexts(0, 500).then(aCtx => {
           clearKeepFirst(oWardSel);
           const seen = new Set();
-          (results || []).forEach(({ ward }) => {
-            if (ward && !seen.has(ward)) {
-              seen.add(ward);
-              oWardSel.addItem(new Item({ key: ward, text: ward }));
+          aCtx.forEach(oCtx => {
+            const w = oCtx.getProperty('Ward');
+            if (w && !seen.has(w)) {
+              seen.add(w);
+              oWardSel.addItem(new Item({ key: w, text: w }));
             }
           });
-        }
-      });
+        });
 
-      // Read distinct Regions
-      oModel.read('/Locations', {
-        urlParameters: { $select: 'region', $orderby: 'region asc' },
-        success: ({ results }) => {
+      oModel.bindList('/Locations', null, null, null, { $select: 'Region' })
+        .requestContexts(0, 500).then(aCtx => {
           clearKeepFirst(oRegSel);
           const seen = new Set();
-          (results || []).forEach(({ region }) => {
-            if (region && !seen.has(region)) {
-              seen.add(region);
-              oRegSel.addItem(new Item({ key: region, text: region }));
+          aCtx.forEach(oCtx => {
+            const r = oCtx.getProperty('Region');
+            if (r && !seen.has(r)) {
+              seen.add(r);
+              oRegSel.addItem(new Item({ key: r, text: r }));
             }
           });
-        }
-      });
+        });
     },
 
     // ── Helpers ──────────────────────────────────────────────────────────────
@@ -269,17 +261,8 @@ sap.ui.define([
         .getText(sKey, aArgs);
     },
 
-    /**
-     * Read a URL query parameter — used to get caseId passed by Service Cloud V2
-     * when this mashup is embedded as an iFrame / mashup component.
-     *
-     * SC2 can pass parameters via URL like:
-     *   https://<your-app>/index.html?caseId={CaseId}
-     *
-     * Configure this placeholder in the SC2 mashup URL template.
-     */
     _getUrlParam(sName) {
-      const url    = new URL(window.location.href);
+      const url = new URL(window.location.href);
       return url.searchParams.get(sName) || '';
     }
 

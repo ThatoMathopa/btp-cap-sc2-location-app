@@ -7,16 +7,16 @@ cds.on('bootstrap', (app) => {
   // ── Mock S/4HANA LocationSet ─────────────────────────────────────────────
   app.get('/mock/s4/ZCDS_GIS', (_req, res) => {
     res.json({ value: [
-      { LocationId:'LOC-001', LocationName:'City Hall',             Ward:'Ward A', Region:'North',   Extension:'EXT-100' },
-      { LocationId:'LOC-002', LocationName:'Community Centre',      Ward:'Ward B', Region:'South',   Extension:'EXT-200' },
-      { LocationId:'LOC-003', LocationName:'Public Library',        Ward:'Ward A', Region:'East',    Extension:'EXT-300' },
-      { LocationId:'LOC-004', LocationName:'Sports Complex',        Ward:'Ward C', Region:'West',    Extension:'EXT-400' },
-      { LocationId:'LOC-005', LocationName:'Health Clinic',         Ward:'Ward D', Region:'North',   Extension:'EXT-500' },
-      { LocationId:'LOC-006', LocationName:'Fire Station 3',        Ward:'Ward B', Region:'South',   Extension:'EXT-600' },
-      { LocationId:'LOC-007', LocationName:'Police Precinct 7',     Ward:'Ward C', Region:'East',    Extension:''        },
-      { LocationId:'LOC-008', LocationName:'Water Treatment Plant', Ward:'Ward E', Region:'West',    Extension:'EXT-800' },
-      { LocationId:'LOC-009', LocationName:'Recycling Depot',       Ward:'Ward F', Region:'North',   Extension:'EXT-900' },
-      { LocationId:'LOC-010', LocationName:'Parks Office',          Ward:'Ward A', Region:'Central', Extension:'EXT-010' }
+      { LocationName:'City Hall',             Ward:'Ward A', Region:'North',   Extension:'EXT-100' },
+      { LocationName:'Community Centre',      Ward:'Ward B', Region:'South',   Extension:'EXT-200' },
+      { LocationName:'Public Library',        Ward:'Ward A', Region:'East',    Extension:'EXT-300' },
+      { LocationName:'Sports Complex',        Ward:'Ward C', Region:'West',    Extension:'EXT-400' },
+      { LocationName:'Health Clinic',         Ward:'Ward D', Region:'North',   Extension:'EXT-500' },
+      { LocationName:'Fire Station 3',        Ward:'Ward B', Region:'South',   Extension:'EXT-600' },
+      { LocationName:'Police Precinct 7',     Ward:'Ward C', Region:'East',    Extension:''        },
+      { LocationName:'Water Treatment Plant', Ward:'Ward E', Region:'West',    Extension:'EXT-800' },
+      { LocationName:'Recycling Depot',       Ward:'Ward F', Region:'North',   Extension:'EXT-900' },
+      { LocationName:'Parks Office',          Ward:'Ward A', Region:'Central', Extension:'EXT-010' }
     ]});
   });
 

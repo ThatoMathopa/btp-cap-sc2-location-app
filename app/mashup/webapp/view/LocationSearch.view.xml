@@ -118,8 +118,8 @@
           items="{
             path: '/Locations',
             parameters: {
-              $select: 'ID,fullLocationName,locationName,ward,region,extension',
-              $orderby: 'fullLocationName asc'
+              $select: 'LocationName,Ward,Region,Extension',
+              $orderby: 'LocationName asc'
             },
             events: {
               dataRequested: '.onDataRequested',
@@ -156,12 +156,12 @@
             <ColumnListItem type="Active" press=".onRowPress">
               <cells>
                 <!-- Computed field shown as primary identifier -->
-                <ObjectIdentifier title="{fullLocationName}" text="{region}" />
-                <Text text="{locationName}" />
-                <Text text="{ward}" />
+                <ObjectIdentifier title="{LocationName}" text="{Region}" />
+                <Text text="{LocationName}" />
+                <Text text="{Ward}" />
                 <ObjectStatus
-                  text="{extension}"
-                  state="{= ${extension} ? 'Information' : 'None' }" />
+                  text="{Extension}"
+                  state="{= ${Extension} ? 'Information' : 'None' }" />
                 <!-- Per-row "Use this location" button -->
                 <Button
                   text="{i18n>btnUseLocation}"
