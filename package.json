@@ -10,6 +10,7 @@
     "@sap/xssec": "^4.0.0",
     "@sap-cloud-sdk/resilience": "^3.0.0",
     "@sap-cloud-sdk/connectivity": "^3.0.0",
+    "@sap-cloud-sdk/http-client": "^3.0.0",
     "passport": "^0.7.0",
     "axios": "^1.7.2",
     "express": "^4.18.3"
