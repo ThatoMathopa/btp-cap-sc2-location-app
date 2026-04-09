@@ -74,9 +74,7 @@ modules:
   - name: cap-sc2-location-dest-content
     type: com.sap.application.content
     requires:
-      - name: cap-sc2-location-srv
-        parameters:
-          content.source.key: srv-api
+      - name: srv-api
       - name: sc2-location-destination
         parameters:
           content-target: true
@@ -102,7 +100,7 @@ modules:
               ServiceKeyName: sc2-location-xsuaa-key
               sap.cloud.service: com.company.locations
             - Name:             cap-sc2-location-srv-api
-              URL:              ~{cap-sc2-location-srv/srv-url}
+              URL:              ~{srv-api/srv-url}
               Type:             HTTP
               Authentication:   NoAuthentication
               HTML5.ForwardAuthToken: true
