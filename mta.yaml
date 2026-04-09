@@ -64,7 +64,6 @@ modules:
   - name: location-dest-content
     type: com.sap.application.content
     requires:
-      - name: srv-api
       - name: location-destination
         parameters:
           content-target: true
@@ -89,12 +88,6 @@ modules:
               ServiceInstanceName: location-xsuaa
               ServiceKeyName: location-xsuaa-key
               sap.cloud.service: com.company.locations
-            - Name: location-srv-api
-              URL: ~{srv-api/srv-url}
-              Type: HTTP
-              Authentication: NoAuthentication
-              HTML5.ForwardAuthToken: true
-              HTML5.DynamicDestination: true
           existing_destinations_policy: ignore
     build-parameters:
       no-source: true
