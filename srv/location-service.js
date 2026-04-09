@@ -111,10 +111,10 @@ module.exports = cds.service.impl(async function (srv) {
     // 2. Build SC2 PATCH payload — extension fields end in _KUT
     //    ⚠️  Replace field names below with the exact names from your SC2 tenant.
     const sc2Payload = {
-      Location_KUT  : loc.locationName,
-      Ward_KUT      : loc.ward,
-      Region_KUT    : loc.region,
-      Extension_KUT : loc.extension
+      LocationName_KUT : loc.locationName,
+      Ward_KUT         : loc.ward,
+      Region_KUT       : loc.region,
+      Extension_KUT    : loc.extension
     };
 
     LOG.info(`Updating SC2 case ${caseId} with location ${loc.fullLocationName}`);
