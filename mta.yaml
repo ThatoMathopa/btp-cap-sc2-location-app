@@ -23,9 +23,7 @@ modules:
       buildpack: nodejs_buildpack
       memory: 256M
     properties:
-      NODE_ENV:     production
-      GIS_USERNAME: <set-me>
-      GIS_PASSWORD: <set-me>
+      NODE_ENV: production
     build-parameters:
       builder: npm
     provides:
