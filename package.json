@@ -24,25 +24,10 @@
   },
   "cds": {
     "requires": {
-      "S4HANA_DESTINATION": {
-        "kind": "odata",
-        "model": "srv/external/S4HANA",
-        "[production]": {
-          "credentials": {
-            "destination": "THD_NEW",
-            "path": "/sap/opu/odata/sap/ZCDS_GIS_CDS"
-          }
-        }
-      },
       "SC2_DESTINATION": {
         "kind": "rest",
-        "[production]": {
-          "credentials": {
-            "destination": "Case_Object"
-          }
-        },
-        "[development]": {
-          "credentials": { "url": "http://localhost:4004/mock/sc2" }
+        "credentials": {
+          "destination": "Case_Object"
         }
       },
       "db": {

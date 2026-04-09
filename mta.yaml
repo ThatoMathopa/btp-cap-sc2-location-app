@@ -22,6 +22,8 @@ modules:
     parameters:
       buildpack: nodejs_buildpack
       memory: 256M
+    properties:
+      NODE_ENV: production
     build-parameters:
       builder: npm
     provides:
