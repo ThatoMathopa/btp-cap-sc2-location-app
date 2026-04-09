@@ -52,7 +52,7 @@ module.exports = cds.service.impl(async function (srv) {
 
     // ── Live fetch from S4HANA via OData ────────────────────────────────────
     try {
-      const rows = await S4.run(SELECT.from('S4HANA.ZCDS_GIS'));
+      const rows = await S4.run(SELECT.from('S4HANA_DESTINATION.ZCDS_GIS'));
       let data   = (Array.isArray(rows) ? rows : []).map(normalise);
 
       // Client-side filtering
