@@ -39,9 +39,10 @@ modules:
     type: html5
     path: app/mashup
     build-parameters:
-      build-result: webapp
+      build-result: .
       builder: custom
-      commands: []
+      commands:
+        - bash -c "cd webapp && zip -r ../location-ui.zip ."
       supported-platforms: []
 
   # ── 3. UI Deployer ───────────────────────────────────────────────────────────
