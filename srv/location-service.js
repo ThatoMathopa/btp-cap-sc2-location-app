@@ -9,29 +9,15 @@ function buildFullName(locationName = '', extension = '') {
   return e ? `${n} (${e})` : n;
 }
 
-// Parse the custom XML returned by ZCDS_GIS_CDS:
-// <Statement_response><row><name>X</name><ward>Y</ward>...</row></Statement_response>
-function parseS4XML(raw) {
-  const str = Buffer.isBuffer(raw) ? raw.toString('utf8')
-            : typeof raw === 'string' ? raw
-            : JSON.stringify(raw);
-
-  const rows = [];
-  for (const match of str.matchAll(/<row>([\s\S]*?)<\/row>/g)) {
-    const block = match[1];
-    const get = (tag) => {
-      const m = block.match(new RegExp(`<${tag}>([\\s\\S]*?)<\\/${tag}>`));
-      return m ? m[1].trim() : '';
-    };
-    const ext = get('extension');
-    rows.push({
-      LocationName : get('name'),
-      Ward         : get('ward'),
-      Region       : get('region'),
-      Extension    : (ext === '0' || ext === '') ? '' : ext
-    });
-  }
-  return rows;
+// Normalise a raw row from ZCDS_GIS (lowercase ABAP field names) to PascalCase for the UI
+function normalise(r) {
+  const ext = String(r.extension ?? r.Extension ?? '').trim();
+  return {
+    LocationName : (r.name       || r.LocationName || '').trim(),
+    Ward         : (r.ward       || r.Ward         || '').trim(),
+    Region       : (r.region     || r.Region       || '').trim(),
+    Extension    : (ext === '0') ? '' : ext
+  };
 }
 
 module.exports = cds.service.impl(async function (srv) {
@@ -64,13 +50,12 @@ module.exports = cds.service.impl(async function (srv) {
       return data;
     }
 
-    // ── Live fetch from S4HANA ──────────────────────────────────────────────
+    // ── Live fetch from S4HANA via OData ────────────────────────────────────
     try {
-      const resp = await S4.send({ method: 'GET', path: '/ZCDS_GIS' });
+      const rows = await S4.run(SELECT.from('S4HANA.ZCDS_GIS'));
+      let data   = (Array.isArray(rows) ? rows : []).map(normalise);
 
-      let data = parseS4XML(resp);
-
-      // Client-side filtering (custom endpoint doesn't support $filter)
+      // Client-side filtering
       const q = (query || '').toLowerCase();
       if (q)      data = data.filter(r => r.LocationName.toLowerCase().includes(q));
       if (ward)   data = data.filter(r => r.Ward   === ward);
@@ -123,7 +108,7 @@ module.exports = cds.service.impl(async function (srv) {
             const axios   = require('axios');
             const baseUrl = (SC2.options?.credentials?.url || '').replace(/\/$/, '');
             const auth    = SC2.options?.credentials?.headers?.Authorization ||
-                            SC2.options?.credentials?.token && `Bearer ${SC2.options.credentials.token}` ||
+                            (SC2.options?.credentials?.token && `Bearer ${SC2.options.credentials.token}`) ||
                             process.env.SC2_AUTH_HEADER || '';
 
             const csrfResp = await axios.get(
