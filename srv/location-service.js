@@ -163,7 +163,9 @@ module.exports = cds.service.impl(async function (srv) {
         Suburb           : locationName,
         Ward             : ward      || '',
         Region           : region    || '',
-        Extension        : extension || ''
+        Extension        : extension || '',
+        Street           : '0',
+        StreetNumber     : '0'
       }
     };
 
