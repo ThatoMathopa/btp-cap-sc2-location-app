@@ -171,14 +171,31 @@ sap.ui.define([
           { duration: 2000 }
         );
 
-        // Close the mashup after a short delay so the user sees the success toast.
-        // SC2 URL mashups run inside an iframe — postMessage closes the parent dialog;
-        // window.close() is the fallback for popup/standalone scenarios.
+        // Close the SC2 mashup dialog after a short delay.
+        // SC2 embeds the mashup in an iframe — browsers block window.close() on iframes,
+        // so we broadcast all known SC2 / C4C / Fiori postMessage close formats and
+        // attempt a history.back() as a final fallback.
         setTimeout(() => {
-          try {
-            window.parent.postMessage(JSON.stringify({ action: 'close' }), '*');
-          } catch (_) { /* cross-origin guard */ }
-          window.close();
+          const targets = [window.parent, window.top];
+          const messages = [
+            { action : 'close'         },
+            { action : 'CLOSE'         },
+            { type   : 'close'         },
+            { type   : 'CLOSE'         },
+            { type   : 'MASHUP_CLOSE'  },
+            { event  : 'MASHUP_CLOSED' },
+            { msg    : 'sap.csc.close' },
+            'close'
+          ];
+          targets.forEach(t => {
+            messages.forEach(m => {
+              try { t.postMessage(m, '*'); } catch (_) {}
+              try { t.postMessage(typeof m === 'string' ? m : JSON.stringify(m), '*'); } catch (_) {}
+            });
+          });
+          // Last-resort fallbacks
+          try { window.close(); }    catch (_) {}
+          try { history.back(); }    catch (_) {}
         }, 1800);
 
       } catch (e) {
