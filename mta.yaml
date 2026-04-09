@@ -24,8 +24,6 @@ modules:
       memory: 256M
     properties:
       NODE_ENV: production
-      VCAP_SERVICES_DESTINATION_GIS: GIS_DESTINATION
-      VCAP_SERVICES_DESTINATION_SC2: Case_Object
     build-parameters:
       builder: npm
     provides:
