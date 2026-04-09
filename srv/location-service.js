@@ -126,11 +126,37 @@ module.exports = cds.service.impl(async function (srv) {
     }
 
     try {
+      // Step 1: GET the case to retrieve the current ETag
+      const casePath = `/sap/c4c/api/v1/case-service/cases/${caseId}`;
+      LOG.info(`Fetching ETag for case ${caseId} via GET ${casePath}`);
+
+      const getResp = await SC2.send({
+        method  : 'GET',
+        path    : casePath,
+        headers : { 'Accept': 'application/json' }
+      });
+
+      // ETag may come from response body (@odata.etag or __metadata.etag)
+      const etag =
+        (getResp && getResp['@odata.etag']) ||
+        (getResp && getResp.__metadata && getResp.__metadata.etag) ||
+        null;
+
+      if (!etag) {
+        LOG.warn(`No ETag found in GET response for case ${caseId}. Proceeding without If-Match.`);
+      } else {
+        LOG.info(`ETag retrieved for case ${caseId}: ${etag}`);
+      }
+
+      // Step 2: PATCH with the retrieved ETag in If-Match header
+      const patchHeaders = { 'Content-Type': 'application/json' };
+      if (etag) patchHeaders['If-Match'] = etag;
+
       await SC2.send({
         method  : 'PATCH',
-        path    : `/sap/c4c/api/v1/case-service/cases/${caseId}`,
+        path    : casePath,
         data    : sc2Payload,
-        headers : { 'Content-Type': 'application/json' }
+        headers : patchHeaders
       });
 
       return {
