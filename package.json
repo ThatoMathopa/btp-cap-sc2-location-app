@@ -1,0 +1,54 @@
+{
+  "name": "btp-cap-sc2-location-app",
+  "version": "1.0.0",
+  "description": "CAP app: S/4HANA location search + Service Cloud V2 case extension field update",
+  "private": true,
+  "license": "UNLICENSED",
+  "dependencies": {
+    "@sap/cds": "^7.9.0",
+    "axios": "^1.7.2",
+    "express": "^4.18.3"
+  },
+  "devDependencies": {
+    "@cap-js/sqlite": "^1.6.0",
+    "@sap/cds-dk": "^7.9.0"
+  },
+  "scripts": {
+    "start": "cds-serve",
+    "dev": "cds watch",
+    "build": "cds build --production"
+  },
+  "cds": {
+    "requires": {
+      "S4HANA_DESTINATION": {
+        "kind": "odata-v2",
+        "model": "srv/external/S4HANA",
+        "[production]": {
+          "credentials": {
+            "destination": "THD_NEW",
+            "path": "/sap/opu/odata/sap/ZCDS_GIS_CDS"
+          }
+        },
+        "[development]": {
+          "credentials": { "url": "http://localhost:4004/mock/s4" }
+        }
+      },
+      "SC2_DESTINATION": {
+        "kind": "rest",
+        "[production]": {
+          "credentials": {
+            "destination": "Case_Object"
+          }
+        },
+        "[development]": {
+          "credentials": { "url": "http://localhost:4004/mock/sc2" }
+        }
+      },
+      "db": {
+        "kind": "sqlite",
+        "[production]": { "kind": "hana-cloud" }
+      }
+    }
+  },
+  "engines": { "node": ">=20" }
+}

@@ -1,0 +1,10 @@
+node_modules/
+gen/
+.env
+*.db
+*.sqlite
+default-env.json
+resources/
+mta_archives/
+.vscode/
+*.log

@@ -1,0 +1,42 @@
+{
+  "xsappname": "cap-sc2-location-app",
+  "tenant-mode": "dedicated",
+  "description": "Security descriptor — S/4HANA Location Search + SC2 Case update",
+  "scopes": [
+    {
+      "name": "$XSAPPNAME.LocationViewer",
+      "description": "Search and view location data"
+    },
+    {
+      "name": "$XSAPPNAME.CaseUpdater",
+      "description": "Apply location to a Service Cloud V2 case"
+    }
+  ],
+  "role-templates": [
+    {
+      "name": "LocationViewer",
+      "description": "Read-only access to location search",
+      "scope-references": [ "$XSAPPNAME.LocationViewer" ]
+    },
+    {
+      "name": "CaseUpdater",
+      "description": "Search locations and update SC2 case fields",
+      "scope-references": [
+        "$XSAPPNAME.LocationViewer",
+        "$XSAPPNAME.CaseUpdater"
+      ]
+    }
+  ],
+  "role-collections": [
+    {
+      "name": "Location_Viewer",
+      "description": "View locations only",
+      "role-template-references": [ "$XSAPPNAME.LocationViewer" ]
+    },
+    {
+      "name": "Location_CaseUpdater",
+      "description": "Search locations and write to SC2 case extension fields",
+      "role-template-references": [ "$XSAPPNAME.CaseUpdater" ]
+    }
+  ]
+}
