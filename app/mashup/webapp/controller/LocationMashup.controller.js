@@ -15,6 +15,14 @@ sap.ui.define([
       // Results model — bound to the table
       this.getView().setModel(new JSONModel({ results: [], busy: false }), 'results');
 
+      // State model — caseId, status, selected location
+      this.getView().setModel(new JSONModel({
+        caseId          : '',
+        statusMessage   : '',
+        statusState     : 'None',
+        selectedLocation: null
+      }), 'state');
+
       // Read Case ID from URL — SC2 passes ?caseId=XXXXX when embedding mashup
       const sCaseId = this._getUrlParam('caseId') || '';
       this._getStateModel().setProperty('/caseId', sCaseId);

@@ -24,8 +24,7 @@
   "cds": {
     "requires": {
       "S4HANA_DESTINATION": {
-        "kind": "odata-v2",
-        "model": "srv/external/S4HANA",
+        "kind": "rest",
         "[production]": {
           "credentials": {
             "destination": "THD_NEW",

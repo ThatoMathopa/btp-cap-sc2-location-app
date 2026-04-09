@@ -9,47 +9,53 @@ function buildFullName(locationName = '', extension = '') {
   return e ? `${n} (${e})` : n;
 }
 
-async function fetchSC2CsrfToken(baseUrl, authHeader) {
-  const axios = require('axios');
-  const resp  = await axios.get(
-    `${baseUrl}/sap/c4c/api/v1/case-service/cases`,
-    {
-      params:  { '$top': 1 },
-      headers: { Authorization: authHeader, 'X-CSRF-Token': 'Fetch' }
-    }
-  );
-  return {
-    token:   resp.headers['x-csrf-token'],
-    cookies: resp.headers['set-cookie']
-  };
+// Parse the custom XML returned by ZCDS_GIS_CDS:
+// <Statement_response><row><name>X</name><ward>Y</ward>...</row></Statement_response>
+function parseS4XML(raw) {
+  const str = Buffer.isBuffer(raw) ? raw.toString('utf8')
+            : typeof raw === 'string' ? raw
+            : JSON.stringify(raw);
+
+  const rows = [];
+  for (const match of str.matchAll(/<row>([\s\S]*?)<\/row>/g)) {
+    const block = match[1];
+    const get = (tag) => {
+      const m = block.match(new RegExp(`<${tag}>([\\s\\S]*?)<\\/${tag}>`));
+      return m ? m[1].trim() : '';
+    };
+    const ext = get('extension');
+    rows.push({
+      LocationName : get('name'),
+      Ward         : get('ward'),
+      Region       : get('region'),
+      Extension    : (ext === '0' || ext === '') ? '' : ext
+    });
+  }
+  return rows;
 }
 
 module.exports = cds.service.impl(async function (srv) {
 
+  // Connect to BTP destinations — resolved from Destination Service bindings
   let S4, SC2;
   try { S4  = await cds.connect.to('S4HANA_DESTINATION'); }
-  catch (e) { LOG.warn('S4HANA_DESTINATION not configured:', e.message); }
+  catch (e) { LOG.warn('S4HANA_DESTINATION (THD_NEW) not available:', e.message); }
 
   try { SC2 = await cds.connect.to('SC2_DESTINATION'); }
-  catch (e) { LOG.warn('SC2_DESTINATION not configured:', e.message); }
+  catch (e) { LOG.warn('SC2_DESTINATION (Case_Object) not available:', e.message); }
 
-  // ── ACTION: searchLocations — fetch live from S4HANA ─────────────────────
+  // ── ACTION: searchLocations ───────────────────────────────────────────────
   srv.on('searchLocations', async (req) => {
     const { query, ward, region } = req.data;
 
+    // ── Dev mock (no S4 connection) ─────────────────────────────────────────
     if (!S4) {
-      // Dev mock — return filtered mock data
       let data = [
-        { LocationName: 'City Hall',             Ward: 'Ward A', Region: 'North',   Extension: 'EXT-100' },
-        { LocationName: 'Community Centre',      Ward: 'Ward B', Region: 'South',   Extension: 'EXT-200' },
-        { LocationName: 'Public Library',        Ward: 'Ward A', Region: 'East',    Extension: 'EXT-300' },
-        { LocationName: 'Sports Complex',        Ward: 'Ward C', Region: 'West',    Extension: 'EXT-400' },
-        { LocationName: 'Health Clinic',         Ward: 'Ward D', Region: 'North',   Extension: 'EXT-500' },
-        { LocationName: 'Fire Station 3',        Ward: 'Ward B', Region: 'South',   Extension: 'EXT-600' },
-        { LocationName: 'Police Precinct 7',     Ward: 'Ward C', Region: 'East',    Extension: ''        },
-        { LocationName: 'Water Treatment Plant', Ward: 'Ward E', Region: 'West',    Extension: 'EXT-800' },
-        { LocationName: 'Recycling Depot',       Ward: 'Ward F', Region: 'North',   Extension: 'EXT-900' },
-        { LocationName: 'Parks Office',          Ward: 'Ward A', Region: 'Central', Extension: 'EXT-010' }
+        { LocationName: 'ALPHENPARK',    Ward: '82', Region: 'Region 3', Extension: ''   },
+        { LocationName: 'MONTANA PARK',  Ward: '5',  Region: 'Region 2', Extension: '12' },
+        { LocationName: 'STERREWAG',     Ward: '42', Region: 'Region 3', Extension: ''   },
+        { LocationName: 'City Hall',     Ward: '1',  Region: 'Region 1', Extension: '10' },
+        { LocationName: 'Health Clinic', Ward: '3',  Region: 'Region 2', Extension: ''   }
       ];
       const q = (query || '').toLowerCase();
       if (q)      data = data.filter(r => r.LocationName.toLowerCase().includes(q));
@@ -58,24 +64,28 @@ module.exports = cds.service.impl(async function (srv) {
       return data;
     }
 
+    // ── Live fetch from S4HANA ──────────────────────────────────────────────
     try {
-      const filter = {};
-      if (query)  filter.LocationName = { like: `%${query}%` };
-      if (ward)   filter.Ward   = ward;
-      if (region) filter.Region = region;
+      const resp = await S4.send({ method: 'GET', path: '/ZCDS_GIS' });
 
-      const cqn = Object.keys(filter).length
-        ? SELECT.from('S4HANA.ZCDS_GIS').where(filter)
-        : SELECT.from('S4HANA.ZCDS_GIS');
+      let data = parseS4XML(resp);
 
-      return await S4.run(cqn);
+      // Client-side filtering (custom endpoint doesn't support $filter)
+      const q = (query || '').toLowerCase();
+      if (q)      data = data.filter(r => r.LocationName.toLowerCase().includes(q));
+      if (ward)   data = data.filter(r => r.Ward   === ward);
+      if (region) data = data.filter(r => r.Region === region);
+
+      LOG.info(`searchLocations returned ${data.length} records`);
+      return data;
+
     } catch (e) {
-      LOG.error('S4 search failed:', e);
-      return req.error(500, `S4 search failed: ${e.message}`);
+      LOG.error('S4HANA search failed:', e.message);
+      return req.error(500, `S4HANA search failed: ${e.message}`);
     }
   });
 
-  // ── ACTION: updateCaseLocation — PATCH SC2 case ───────────────────────────
+  // ── ACTION: updateCaseLocation ────────────────────────────────────────────
   srv.on('updateCaseLocation', async (req) => {
     const { caseId, locationName, ward, region, extension } = req.data;
 
@@ -85,47 +95,70 @@ module.exports = cds.service.impl(async function (srv) {
     const fullName = buildFullName(locationName, extension);
 
     const sc2Payload = {
-      LocationName_KUT : locationName,
-      Ward_KUT         : ward     || '',
-      Region_KUT       : region   || '',
-      Extension_KUT    : extension || ''
+      extensions: {
+        LocationName : locationName,
+        Ward         : ward      || '',
+        Region       : region    || '',
+        Extension    : extension || ''
+      }
     };
 
-    LOG.info(`Updating SC2 case ${caseId} with location "${fullName}"`);
+    LOG.info(`Updating SC2 case ${caseId} → location "${fullName}"`);
 
     if (SC2) {
       try {
-        const axios   = require('axios');
-        const baseUrl = (
-          SC2.options?.credentials?.url ||
-          process.env.SC2_BASE_URL       ||
-          'http://localhost:4004/mock/sc2'
-        ).replace(/\/$/, '');
+        await SC2.send({
+          method  : 'PATCH',
+          path    : `/sap/c4c/api/v1/case-service/cases/${caseId}`,
+          data    : sc2Payload,
+          headers : { 'Content-Type': 'application/json' }
+        });
+        LOG.info(`SC2 case ${caseId} updated successfully.`);
 
-        const authHeader = SC2.options?.credentials?.headers?.Authorization ||
-                           process.env.SC2_AUTH_HEADER || 'Basic CHANGEME';
-
-        const { token, cookies } = await fetchSC2CsrfToken(baseUrl, authHeader);
-
-        await axios.patch(
-          `${baseUrl}/sap/c4c/api/v1/case-service/cases/${caseId}`,
-          sc2Payload,
-          {
-            headers: {
-              'Content-Type'  : 'application/json',
-              'Authorization' : authHeader,
-              'X-CSRF-Token'  : token,
-              'Cookie'        : (cookies || []).join('; ')
-            }
-          }
-        );
       } catch (e) {
-        const msg = e.response?.data?.message || e.message;
-        LOG.error(`SC2 PATCH failed for case ${caseId}:`, msg);
-        return req.error(502, `SC2 update failed: ${msg}`);
+        // If SC2 requires X-CSRF-Token (403 Forbidden), fetch token and retry
+        if (e.response?.status === 403 || e.status === 403) {
+          LOG.info('SC2 requires CSRF token — fetching and retrying...');
+          try {
+            const axios   = require('axios');
+            const baseUrl = (SC2.options?.credentials?.url || '').replace(/\/$/, '');
+            const auth    = SC2.options?.credentials?.headers?.Authorization ||
+                            SC2.options?.credentials?.token && `Bearer ${SC2.options.credentials.token}` ||
+                            process.env.SC2_AUTH_HEADER || '';
+
+            const csrfResp = await axios.get(
+              `${baseUrl}/sap/c4c/api/v1/case-service/cases?$top=1`,
+              { headers: { Authorization: auth, 'X-CSRF-Token': 'Fetch' } }
+            );
+            const token   = csrfResp.headers['x-csrf-token'];
+            const cookies = (csrfResp.headers['set-cookie'] || []).join('; ');
+
+            await axios.patch(
+              `${baseUrl}/sap/c4c/api/v1/case-service/cases/${caseId}`,
+              sc2Payload,
+              {
+                headers: {
+                  'Content-Type'  : 'application/json',
+                  'Authorization' : auth,
+                  'X-CSRF-Token'  : token,
+                  'Cookie'        : cookies
+                }
+              }
+            );
+            LOG.info(`SC2 case ${caseId} updated (with CSRF token).`);
+          } catch (retryErr) {
+            const msg = retryErr.response?.data?.message || retryErr.message;
+            LOG.error(`SC2 PATCH retry failed for case ${caseId}:`, msg);
+            return req.error(502, `SC2 update failed: ${msg}`);
+          }
+        } else {
+          const msg = e.response?.data?.message || e.message;
+          LOG.error(`SC2 PATCH failed for case ${caseId}:`, msg);
+          return req.error(502, `SC2 update failed: ${msg}`);
+        }
       }
     } else {
-      LOG.info('[DEV] SC2_DESTINATION not configured. Would have sent:', sc2Payload);
+      LOG.info('[DEV] SC2_DESTINATION not configured. Would have sent:', JSON.stringify(sc2Payload));
     }
 
     return {
