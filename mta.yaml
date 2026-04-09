@@ -74,6 +74,9 @@ modules:
   - name: cap-sc2-location-dest-content
     type: com.sap.application.content
     requires:
+      - name: cap-sc2-location-srv
+        parameters:
+          content.source.key: srv-api
       - name: sc2-location-destination
         parameters:
           content-target: true
@@ -98,6 +101,12 @@ modules:
               ServiceInstanceName: sc2-location-xsuaa
               ServiceKeyName: sc2-location-xsuaa-key
               sap.cloud.service: com.company.locations
+            - Name:             cap-sc2-location-srv-api
+              URL:              ~{cap-sc2-location-srv/srv-url}
+              Type:             HTTP
+              Authentication:   NoAuthentication
+              HTML5.ForwardAuthToken: true
+              HTML5.DynamicDestination: true
           existing_destinations_policy: ignore
     build-parameters:
       no-source: true
@@ -130,24 +139,6 @@ resources:
       service-plan: lite
       config:
         HTML5Runtime_enabled: true
-        init_data:
-          instance:
-            existing_destinations_policy: ignore
-            destinations:
-
-              # ── S/4HANA — THD_NEW already exists in BTP Destination Service ──
-              # Do NOT redefine here; the existing destination will be used.
-
-              # ── Service Cloud V2 — Case_Object already exists in BTP Destination Service ──
-              # Do NOT redefine here; the existing destination will be used.
-
-              # ── CAP backend → HTML5 repo ─────────────────────────────
-              - Name:             cap-sc2-location-srv-api
-                URL:              ~{srv-api/srv-url}
-                Type:             HTTP
-                Authentication:   NoAuthentication
-                HTML5.ForwardAuthToken: true
-                HTML5.DynamicDestination: true
 
   # ── Cloud Connector (for on-premise S/4HANA) ──────────────────────────────
   - name: sc2-location-connectivity
