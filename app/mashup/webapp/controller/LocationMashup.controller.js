@@ -168,8 +168,18 @@ sap.ui.define([
         );
         MessageToast.show(
           this._i18n('updateSuccess', [sDisplayName, sCaseId]),
-          { duration: 4000 }
+          { duration: 2000 }
         );
+
+        // Close the mashup after a short delay so the user sees the success toast.
+        // SC2 URL mashups run inside an iframe — postMessage closes the parent dialog;
+        // window.close() is the fallback for popup/standalone scenarios.
+        setTimeout(() => {
+          try {
+            window.parent.postMessage(JSON.stringify({ action: 'close' }), '*');
+          } catch (_) { /* cross-origin guard */ }
+          window.close();
+        }, 1800);
 
       } catch (e) {
         const sMsg = e?.error?.message || e?.message || this._i18n('updateError');
