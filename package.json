@@ -43,7 +43,6 @@
           "credentials": { "url": "http://localhost:4004/mock/sc2" }
         }
       },
-      "db": { "kind": "sqlite" }
     }
   },
   "engines": { "node": ">=20" }
