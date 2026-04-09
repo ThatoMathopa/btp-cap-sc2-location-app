@@ -137,10 +137,10 @@
           <items>
             <ColumnListItem type="Active" press=".onRowPress" highlight="{results>_highlight}">
               <cells>
-                <!-- Location name — bold, with subtitle showing full formatted name -->
+                <!-- Full name (includes extension if any) as title; base name as subtitle -->
                 <ObjectIdentifier
-                  title="{results>LocationName}"
-                  text="{results>_fullName}"
+                  title="{results>_fullName}"
+                  text="{= ${results>Extension} ? ${results>LocationName} : '' }"
                   titleActive="false" />
 
                 <!-- Ward -->
