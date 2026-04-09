@@ -30,21 +30,11 @@ modules:
         properties:
           srv-url: ${default-url}
     requires:
-      - name: sc2-location-db
       - name: sc2-location-xsuaa
       - name: sc2-location-destination
       - name: sc2-location-connectivity
 
-  # ── 2. HANA DB Deployer ───────────────────────────────────────────────────
-  - name: cap-sc2-location-db-deployer
-    type: hdb
-    path: gen/db
-    parameters:
-      buildpack: nodejs_buildpack
-    requires:
-      - name: sc2-location-db
-
-  # ── 3. UI Mashup App ──────────────────────────────────────────────────────
+  # ── 2. UI Mashup App ──────────────────────────────────────────────────────
   - name: cap-sc2-location-app
     type: html5
     path: app/mashup
@@ -54,7 +44,7 @@ modules:
       commands: []
       supported-platforms: []
 
-  # ── 4. HTML5 App Deployer ─────────────────────────────────────────────────
+  # ── 3. HTML5 App Deployer ─────────────────────────────────────────────────
   - name: cap-sc2-location-app-deployer
     type: com.sap.application.content
     path: .
@@ -70,7 +60,7 @@ modules:
             - cap-sc2-location-app.zip
           target-path: resources/
 
-  # ── 5. Destination Configurator ───────────────────────────────────────────
+  # ── 4. Destination Configurator ───────────────────────────────────────────
   - name: cap-sc2-location-dest-content
     type: com.sap.application.content
     requires:
@@ -110,13 +100,6 @@ modules:
       no-source: true
 
 resources:
-
-  # ── HANA Cloud ────────────────────────────────────────────────────────────
-  - name: sc2-location-db
-    type: com.sap.xs.hdi-container
-    parameters:
-      service:      hana
-      service-plan: hdi-shared
 
   # ── XSUAA ─────────────────────────────────────────────────────────────────
   - name: sc2-location-xsuaa

@@ -2,11 +2,8 @@
   "build": {
     "target": "gen",
     "tasks": [
-      { "for": "hana",   "src": "db",  "options": { "model": ["db","srv"] } },
-      { "for": "nodejs", "src": "srv", "options": { "model": ["db","srv"] } }
+      { "for": "nodejs", "src": "srv", "options": { "model": ["srv"] } }
     ]
   },
-  "odata": { "version": "v4" },
-  "hana": { "deploy-format": "hdbtable" },
-  "log": { "levels": { "sqlite": "error" } }
+  "odata": { "version": "v4" }
 }

@@ -10,7 +10,6 @@
     "express": "^4.18.3"
   },
   "devDependencies": {
-    "@cap-js/sqlite": "^1.6.0",
     "@sap/cds-dk": "^7.9.0"
   },
   "scripts": {
@@ -44,10 +43,7 @@
           "credentials": { "url": "http://localhost:4004/mock/sc2" }
         }
       },
-      "db": {
-        "kind": "sqlite",
-        "[production]": { "kind": "hana-cloud" }
-      }
+      "db": { "kind": "sqlite" }
     }
   },
   "engines": { "node": ">=20" }
