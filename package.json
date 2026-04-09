@@ -6,6 +6,7 @@
   "license": "UNLICENSED",
   "dependencies": {
     "@sap/cds": "^9.0.0",
+    "@cap-js/sqlite": "^1.6.0",
     "axios": "^1.7.2",
     "express": "^4.18.3"
   },
@@ -43,6 +44,10 @@
           "credentials": { "url": "http://localhost:4004/mock/sc2" }
         }
       },
+      "db": {
+        "kind": "sqlite",
+        "[production]": { "credentials": { "url": ":memory:" } }
+      }
     }
   },
   "engines": { "node": ">=20" }
