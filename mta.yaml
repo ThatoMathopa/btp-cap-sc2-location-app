@@ -24,6 +24,8 @@ modules:
       memory: 256M
     properties:
       NODE_ENV: production
+      VCAP_SERVICES_DESTINATION_GIS: GIS_DESTINATION
+      VCAP_SERVICES_DESTINATION_SC2: Case_Object
     build-parameters:
       builder: npm
     provides:
@@ -34,9 +36,6 @@ modules:
       - name: location-xsuaa
       - name: location-destination
       - name: location-connectivity
-    properties:
-      VCAP_SERVICES_DESTINATION_GIS: GIS_DESTINATION
-      VCAP_SERVICES_DESTINATION_SC2: Case_Object
 
   # ── 2. Approuter (serves UI statically + proxies OData to backend) ───────────
   - name: location-approuter
