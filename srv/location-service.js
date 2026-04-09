@@ -12,7 +12,26 @@ function buildFullName(locationName = '', extension = '') {
   return e ? `${n} (${e})` : n;
 }
 
+// Parse SAP OData date formats:
+//   /Date(1234567890000)/  →  JS Date
+//   YYYY-MM-DD            →  JS Date
+//   Returns null if unparseable or clearly empty (00000000 / 9999-12-31 treated as no expiry)
+function parseSAPDate(str) {
+  if (!str) return null;
+  const ms = str.match(/\/Date\((\d+)\)\//);
+  if (ms) {
+    const d = new Date(parseInt(ms[1]));
+    return isNaN(d) ? null : d;
+  }
+  if (/^\d{4}-\d{2}-\d{2}/.test(str)) {
+    const d = new Date(str);
+    return isNaN(d) ? null : d;
+  }
+  return null;
+}
+
 // Parse standard OData V2 XML: <m:properties><d:Field>value</d:Field>...</m:properties>
+// Also extracts validity date fields used for cleaning.
 function parseODataV2XML(xmlStr) {
   const rows = [];
   for (const match of xmlStr.matchAll(/<m:properties[^>]*>([\s\S]*?)<\/m:properties>/g)) {
@@ -26,10 +45,42 @@ function parseODataV2XML(xmlStr) {
       LocationName : get('LocationName'),
       Ward         : get('Ward'),
       Region       : get('Region'),
-      Extension    : (ext === '0') ? '' : ext
+      Extension    : (ext === '0') ? '' : ext,
+      // Capture any validity date fields present in the OData response
+      _validFrom   : get('ValidFrom')          || get('ValidityStartDate') || get('DateFrom') || '',
+      _validTo     : get('ValidTo')            || get('ValidityEndDate')   || get('DateTo')   || ''
     });
   }
   return rows;
+}
+
+// Returns true if a record should be included after data-quality checks.
+function isCleanRecord(r, now) {
+  const name   = (r.LocationName || '').trim();
+  const ward   = (r.Ward         || '').trim();
+  const region = (r.Region       || '').trim();
+
+  // 1. Skip zero-padded garbage names  e.g. "MABOPANE X00000000000000000012"
+  if (/X0{5,}/.test(name)) return false;
+
+  // 2. Skip records with placeholder ward "00" / "0"
+  if (ward === '00' || ward === '0') return false;
+
+  // 3. Skip records with no ward AND no region (stale / incomplete duplicates)
+  if (!ward && !region) return false;
+
+  // 4. Date validity — only filter when the field is actually present
+  if (r._validFrom) {
+    const from = parseSAPDate(r._validFrom);
+    if (from && from > now) return false;   // not yet effective
+  }
+  if (r._validTo) {
+    const to = parseSAPDate(r._validTo);
+    // Ignore the SAP "no expiry" sentinel 9999-12-31
+    if (to && to.getFullYear() < 9999 && to < now) return false;  // expired
+  }
+
+  return true;
 }
 
 module.exports = cds.service.impl(async function (srv) {
@@ -60,8 +111,9 @@ module.exports = cds.service.impl(async function (srv) {
       LOG.info(`GIS response content-type: ${resp.headers['content-type']}`);
       LOG.info(`GIS raw response (first 500 chars): ${String(resp.data).substring(0, 500)}`);
 
-      let data   = parseODataV2XML(resp.data);
-      LOG.info(`Parsed ${data.length} records from GIS response`);
+      const now  = new Date();
+      let data   = parseODataV2XML(resp.data).filter(r => isCleanRecord(r, now));
+      LOG.info(`Parsed and cleaned: ${data.length} valid records from GIS response`);
 
       // Client-side filtering
       const q = (query || '').toLowerCase();
