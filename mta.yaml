@@ -57,7 +57,7 @@ modules:
       requires:
         - name: location-ui
           artifacts:
-            - cap-sc2-location-app.zip
+            - location-ui.zip
           target-path: resources/
 
   # ── 4. Destination Content ───────────────────────────────────────────────────
