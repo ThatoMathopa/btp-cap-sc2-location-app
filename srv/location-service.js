@@ -52,8 +52,16 @@ module.exports = cds.service.impl(async function (srv) {
         headers['Authorization'] = `Basic ${Buffer.from(`${user}:${pass}`).toString('base64')}`;
       }
 
+      LOG.info(`Calling GIS URL: ${GIS_URL}`);
+      LOG.info(`Auth header present: ${!!headers['Authorization']}`);
+
       const resp = await axios.get(GIS_URL, { headers, timeout: 15000 });
+      LOG.info(`GIS response status: ${resp.status}`);
+      LOG.info(`GIS response content-type: ${resp.headers['content-type']}`);
+      LOG.info(`GIS raw response (first 500 chars): ${String(resp.data).substring(0, 500)}`);
+
       let data   = parseODataV2XML(resp.data);
+      LOG.info(`Parsed ${data.length} records from GIS response`);
 
       // Client-side filtering
       const q = (query || '').toLowerCase();
@@ -66,6 +74,16 @@ module.exports = cds.service.impl(async function (srv) {
 
     } catch (e) {
       LOG.error('GIS fetch failed:', e.message);
+      if (e.response) {
+        LOG.error(`GIS HTTP status: ${e.response.status}`);
+        LOG.error(`GIS response body (first 500 chars): ${String(e.response.data).substring(0, 500)}`);
+      } else if (e.request) {
+        LOG.error('GIS request was made but no response received (timeout or network error)');
+      } else {
+        LOG.error('GIS request setup error:', e.stack);
+      }
+      LOG.warn('GIS_USERNAME set:', !!process.env.GIS_USERNAME);
+      LOG.warn('GIS_PASSWORD set:', !!process.env.GIS_PASSWORD);
 
       // Fall back to mock data so the UI still loads during outages
       LOG.info('Returning mock data as fallback');
