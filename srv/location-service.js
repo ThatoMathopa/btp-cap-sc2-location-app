@@ -84,13 +84,14 @@ module.exports = cds.service.impl(async function (srv) {
 
     const fullName = buildFullName(locationName, extension);
 
-    // SC2 case extensions object — field names match SC2 custom extension schema
+    // SC2 case extensions object — maps S4 location fields to SC2 extension field names
     const sc2Payload = {
       extensions: {
-        LocationName : locationName,
-        Ward         : ward      || '',
-        Region       : region    || '',
-        Extension    : extension || ''
+        TownshipFarmName : locationName,
+        Suburb           : locationName,
+        Ward             : ward      || '',
+        Region           : region    || '',
+        Extension        : extension || ''
       }
     };
 
