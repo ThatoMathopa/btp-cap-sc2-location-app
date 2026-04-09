@@ -109,7 +109,7 @@ resources:
       service-plan: application
       path:         ./xs-security.json
       config:
-        xsappname: cap-sc2-location-app-${org}-${space}
+        xsappname: cap-sc2-location-app
         tenant-mode: dedicated
 
   # ── Destination Service ───────────────────────────────────────────────────
