@@ -42,6 +42,20 @@ sap.ui.define([
       MessageToast.show(this._i18n('filtersCleared'));
     },
 
+    // Assign a consistent highlight colour per region so rows are visually grouped
+    _regionHighlight(sRegion) {
+      const map = {};
+      const palette = ['Information', 'Success', 'Warning', 'Error'];
+      return (sRegion) => {
+        if (!sRegion) return 'None';
+        if (!map[sRegion]) {
+          const keys = Object.keys(map);
+          map[sRegion] = palette[keys.length % palette.length];
+        }
+        return map[sRegion];
+      };
+    },
+
     async _search() {
       const query  = (this.byId('globalSearch').getValue() || '').trim();
       const ward   = this.byId('filterWard').getSelectedKey()   || '';
@@ -60,7 +74,15 @@ sap.ui.define([
         await oAction.execute();
 
         const oResult = oAction.getBoundContext().getObject();
-        const aData   = oResult?.value || (Array.isArray(oResult) ? oResult : []);
+        let   aData   = oResult?.value || (Array.isArray(oResult) ? oResult : []);
+
+        // Enrich each row with computed display fields
+        const highlightFor = this._regionHighlight();
+        aData = aData.map(r => ({
+          ...r,
+          _fullName  : r.Extension ? `${r.LocationName} (${r.Extension})` : r.LocationName,
+          _highlight : highlightFor(r.Region)
+        }));
 
         oResultsModel.setProperty('/results', aData);
         this._setResultCount(this._i18n('resultCount', [aData.length]));

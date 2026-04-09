@@ -12,18 +12,21 @@
 
         <!-- ═══ Header bar ══════════════════════════════════════════════ -->
         <HBox alignItems="Center" class="sapUiSmallMarginBottom">
-          <core:Icon src="sap-icon://map" color="#0070F2" size="1.4rem" class="sapUiSmallMarginEnd" />
+          <core:Icon src="sap-icon://map" color="#0070F2" size="1.5rem" class="sapUiSmallMarginEnd" />
           <Title text="{i18n>appTitle}" level="H3" />
           <ToolbarSpacer />
-          <!-- Case ID indicator — passed in from SC2 via URL param -->
           <HBox alignItems="Center" visible="{= !!${state>/caseId} }">
-            <core:Icon src="sap-icon://crm-service-manager" size="1rem" class="sapUiSmallMarginEnd" />
-            <Label text="{i18n>caseLabel}" />
-            <Text text="{state>/caseId}" class="sapUiSmallMarginBegin" />
+            <core:Icon src="sap-icon://crm-service-manager" color="#0070F2" size="1rem" class="sapUiSmallMarginEnd" />
+            <Label text="{i18n>caseLabel}" design="Bold" />
+            <ObjectStatus
+              text="{state>/caseId}"
+              state="Information"
+              inverted="true"
+              class="sapUiSmallMarginBegin" />
           </HBox>
         </HBox>
 
-        <!-- ═══ Status message (success / error after update) ══════════ -->
+        <!-- ═══ Status / warning strips ════════════════════════════════ -->
         <MessageStrip
           id="statusStrip"
           text="{state>/statusMessage}"
@@ -34,7 +37,6 @@
           close=".onClearStatus"
           class="sapUiSmallMarginBottom" />
 
-        <!-- ═══ Missing case ID warning ════════════════════════════════ -->
         <MessageStrip
           text="{i18n>noCaseWarning}"
           type="Warning"
@@ -45,7 +47,7 @@
         <!-- ═══ Search & filter panel ══════════════════════════════════ -->
         <Panel expandable="true" expanded="true" headerText="{i18n>filterPanelTitle}">
           <content>
-            <l:Grid defaultSpan="XL3 L4 M6 S12" class="sapUiTinyMarginTop sapUiSmallMarginBottom">
+            <l:Grid defaultSpan="XL4 L4 M6 S12" class="sapUiTinyMarginTop sapUiSmallMarginBottom">
               <l:content>
 
                 <!-- Global free-text search -->
@@ -57,16 +59,6 @@
                     liveChange=".onLiveSearch"
                     search=".onLiveSearch"
                     showRefreshButton="false"
-                    width="100%" />
-                </VBox>
-
-                <!-- Location Name filter -->
-                <VBox>
-                  <Label text="{i18n>labelLocationName}" labelFor="filterName" />
-                  <Input
-                    id="filterName"
-                    placeholder="{i18n>filterPlaceholder}"
-                    liveChange=".onLiveSearch"
                     width="100%" />
                 </VBox>
 
@@ -105,11 +97,9 @@
 
         <!-- ═══ Result count ═══════════════════════════════════════════ -->
         <HBox alignItems="Center" class="sapUiSmallMarginTop sapUiSmallMarginBottom">
-          <Text id="resultCount" text="{i18n>loadingText}" class="sapUiSmallMarginEnd" />
-          <BusyIndicator
-            id="tableBusy"
-            visible="false"
-            size="0.7rem" />
+          <core:Icon src="sap-icon://list" size="0.875rem" class="sapUiSmallMarginEnd" />
+          <Text id="resultCount" text="{i18n>loadingText}" />
+          <BusyIndicator id="tableBusy" visible="false" size="0.7rem" class="sapUiSmallMarginBegin" />
         </HBox>
 
         <!-- ═══ Locations table ════════════════════════════════════════ -->
@@ -118,41 +108,60 @@
           items="{results>/results}"
           busy="{results>/busy}"
           growing="true"
-          growingThreshold="20"
+          growingThreshold="25"
           growingScrollToLoad="true"
           mode="SingleSelectMaster"
           noDataText="{i18n>noDataText}"
           sticky="ColumnHeaders"
+          alternateRowColors="true"
           class="sapUiSmallMarginTop">
 
           <columns>
-            <Column width="30%">
-              <Text text="{i18n>colFullName}" />
+            <Column width="35%">
+              <Text text="{i18n>colLocationName}" />
             </Column>
-            <Column width="20%" minScreenWidth="Tablet" demandPopin="true">
-              <Text text="{i18n>labelLocationName}" />
-            </Column>
-            <Column width="18%" minScreenWidth="Tablet" demandPopin="true">
+            <Column width="15%" minScreenWidth="Tablet" demandPopin="true" popinDisplay="Inline">
               <Text text="{i18n>labelWard}" />
             </Column>
-            <Column width="18%" minScreenWidth="Desktop" demandPopin="true">
+            <Column width="20%" minScreenWidth="Tablet" demandPopin="true" popinDisplay="Inline">
               <Text text="{i18n>labelRegion}" />
             </Column>
-            <Column width="14%" minScreenWidth="Desktop" demandPopin="true" hAlign="End">
+            <Column width="15%" minScreenWidth="Desktop" demandPopin="true" popinDisplay="Inline">
+              <Text text="{i18n>labelExtension}" />
+            </Column>
+            <Column width="15%" minScreenWidth="Phone" hAlign="End">
               <Text text="{i18n>labelAction}" />
             </Column>
           </columns>
 
           <items>
-            <ColumnListItem type="Active" press=".onRowPress">
+            <ColumnListItem type="Active" press=".onRowPress" highlight="{results>_highlight}">
               <cells>
-                <ObjectIdentifier title="{results>LocationName}" text="{results>Region}" />
-                <Text text="{results>LocationName}" />
-                <Text text="{results>Ward}" />
+                <!-- Location name — bold, with subtitle showing full formatted name -->
+                <ObjectIdentifier
+                  title="{results>LocationName}"
+                  text="{results>_fullName}"
+                  titleActive="false" />
+
+                <!-- Ward -->
+                <ObjectNumber
+                  number="{results>Ward}"
+                  emphasized="false"
+                  unit=""
+                  visible="{= !!${results>Ward} }" />
+
+                <!-- Region -->
+                <ObjectStatus
+                  text="{results>Region}"
+                  state="None" />
+
+                <!-- Extension -->
                 <ObjectStatus
                   text="{results>Extension}"
-                  state="{= ${results>Extension} ? 'Information' : 'None' }" />
-                <!-- Per-row "Use this location" button -->
+                  state="{= ${results>Extension} ? 'Information' : 'None' }"
+                  icon="{= ${results>Extension} ? 'sap-icon://tag' : '' }" />
+
+                <!-- Action -->
                 <Button
                   text="{i18n>btnUseLocation}"
                   type="Emphasized"
