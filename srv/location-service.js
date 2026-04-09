@@ -10,22 +10,6 @@ function buildFullName(locationName = '', extension = '') {
   return e ? `${n} (${e})` : n;
 }
 
-async function fetchSC2CsrfToken(sc2BaseUrl, authHeader) {
-  const axios = require('axios');
-  const base  = sc2BaseUrl.replace(/\/$/, '');
-  const resp  = await axios.get(`${base}/sap/c4c/api/v1/case-service/cases`, {
-    params: { '$top': 1 },
-    headers: {
-      Authorization:  authHeader,
-      'X-CSRF-Token': 'Fetch'
-    }
-  });
-  return {
-    token:   resp.headers['x-csrf-token'],
-    cookies: resp.headers['set-cookie']
-  };
-}
-
 module.exports = cds.service.impl(async function (srv) {
 
   let SC2;
@@ -55,14 +39,35 @@ module.exports = cds.service.impl(async function (srv) {
 
     if (SC2) {
       try {
-        const axios       = require('axios');
-        const destination = (process.env.SC2_BASE_URL || 'http://localhost:4004/mock/sc2').replace(/\/$/, '');
-        const authHeader  = process.env.SC2_AUTH_HEADER || 'Basic CHANGEME';
+        // Resolve base URL: from BTP destination binding in production,
+        // or SC2_BASE_URL env var for local dev
+        const baseUrl = (
+          SC2.options?.credentials?.url ||
+          process.env.SC2_BASE_URL       ||
+          'http://localhost:4004/mock/sc2'
+        ).replace(/\/$/, '');
 
-        const { token, cookies } = await fetchSC2CsrfToken(destination, authHeader);
+        // Resolve auth header: from BTP destination binding or env var
+        const authHeader = SC2.options?.credentials?.headers?.Authorization ||
+                           process.env.SC2_AUTH_HEADER                        ||
+                           'Basic CHANGEME';
 
+        const axios = require('axios');
+
+        // Step 1: fetch CSRF token
+        const csrfResp = await axios.get(
+          `${baseUrl}/sap/c4c/api/v1/case-service/cases`,
+          {
+            params:  { '$top': 1 },
+            headers: { Authorization: authHeader, 'X-CSRF-Token': 'Fetch' }
+          }
+        );
+        const token   = csrfResp.headers['x-csrf-token'];
+        const cookies = csrfResp.headers['set-cookie'];
+
+        // Step 2: PATCH the case
         await axios.patch(
-          `${destination}/sap/c4c/api/v1/case-service/cases/${caseId}`,
+          `${baseUrl}/sap/c4c/api/v1/case-service/cases/${caseId}`,
           sc2Payload,
           {
             headers: {
@@ -73,6 +78,9 @@ module.exports = cds.service.impl(async function (srv) {
             }
           }
         );
+
+        LOG.info(`SC2 case ${caseId} updated successfully.`);
+
       } catch (e) {
         const sc2Error = e.response?.data?.message || e.message;
         LOG.error(`SC2 PATCH failed for case ${caseId}:`, sc2Error);
