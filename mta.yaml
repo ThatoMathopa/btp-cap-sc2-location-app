@@ -1,7 +1,7 @@
 _schema-version: '3.1'
-ID: btp-cap-sc2-location-app
+ID: location-app
 version: 1.0.0
-description: "S/4HANA Location Search → Service Cloud V2 Extension Field Update"
+description: "S4 Location Search to Service Cloud V2"
 
 parameters:
   enable-parallel-deployments: true
@@ -16,8 +16,8 @@ build-parameters:
 
 modules:
 
-  # ── 1. CAP Node.js Backend ────────────────────────────────────────────────
-  - name: cap-sc2-location-srv
+  # ── 1. CAP Backend ───────────────────────────────────────────────────────────
+  - name: location-srv
     type: nodejs
     path: gen/srv
     parameters:
@@ -30,12 +30,12 @@ modules:
         properties:
           srv-url: ${default-url}
     requires:
-      - name: sc2-location-xsuaa
-      - name: sc2-location-destination
-      - name: sc2-location-connectivity
+      - name: location-xsuaa
+      - name: location-destination
+      - name: location-connectivity
 
-  # ── 2. UI Mashup App ──────────────────────────────────────────────────────
-  - name: cap-sc2-location-app
+  # ── 2. UI App ────────────────────────────────────────────────────────────────
+  - name: location-ui
     type: html5
     path: app/mashup
     build-parameters:
@@ -44,55 +44,55 @@ modules:
       commands: []
       supported-platforms: []
 
-  # ── 3. HTML5 App Deployer ─────────────────────────────────────────────────
-  - name: cap-sc2-location-app-deployer
+  # ── 3. UI Deployer ───────────────────────────────────────────────────────────
+  - name: location-ui-deployer
     type: com.sap.application.content
     path: .
     requires:
-      - name: sc2-location-html5-host
+      - name: location-html5-host
         parameters:
           content-target: true
     build-parameters:
       build-result: resources
       requires:
-        - name: cap-sc2-location-app
+        - name: location-ui
           artifacts:
             - cap-sc2-location-app.zip
           target-path: resources/
 
-  # ── 4. Destination Configurator ───────────────────────────────────────────
-  - name: cap-sc2-location-dest-content
+  # ── 4. Destination Content ───────────────────────────────────────────────────
+  - name: location-dest-content
     type: com.sap.application.content
     requires:
       - name: srv-api
-      - name: sc2-location-destination
+      - name: location-destination
         parameters:
           content-target: true
-      - name: sc2-location-html5-host
+      - name: location-html5-host
         parameters:
           service-key:
-            name: sc2-location-html5-host-key
-      - name: sc2-location-xsuaa
+            name: location-html5-host-key
+      - name: location-xsuaa
         parameters:
           service-key:
-            name: sc2-location-xsuaa-key
+            name: location-xsuaa-key
     parameters:
       content:
         instance:
           destinations:
-            - Name: sc2_location_html5_host
-              ServiceInstanceName: sc2-location-html5-host
-              ServiceKeyName: sc2-location-html5-host-key
+            - Name: location-html5-host
+              ServiceInstanceName: location-html5-host
+              ServiceKeyName: location-html5-host-key
               sap.cloud.service: com.company.locations
             - Authentication: OAuth2UserTokenExchange
-              Name: sc2_location_app_xsuaa
-              ServiceInstanceName: sc2-location-xsuaa
-              ServiceKeyName: sc2-location-xsuaa-key
+              Name: location-xsuaa
+              ServiceInstanceName: location-xsuaa
+              ServiceKeyName: location-xsuaa-key
               sap.cloud.service: com.company.locations
-            - Name:             cap-sc2-location-srv-api
-              URL:              ~{srv-api/srv-url}
-              Type:             HTTP
-              Authentication:   NoAuthentication
+            - Name: location-srv-api
+              URL: ~{srv-api/srv-url}
+              Type: HTTP
+              Authentication: NoAuthentication
               HTML5.ForwardAuthToken: true
               HTML5.DynamicDestination: true
           existing_destinations_policy: ignore
@@ -101,19 +101,19 @@ modules:
 
 resources:
 
-  # ── XSUAA ─────────────────────────────────────────────────────────────────
-  - name: sc2-location-xsuaa
+  # ── XSUAA ────────────────────────────────────────────────────────────────────
+  - name: location-xsuaa
     type: org.cloudfoundry.managed-service
     parameters:
       service:      xsuaa
       service-plan: application
       path:         ./xs-security.json
       config:
-        xsappname: cap-sc2-location-app
+        xsappname: location-app
         tenant-mode: dedicated
 
-  # ── Destination Service ───────────────────────────────────────────────────
-  - name: sc2-location-destination
+  # ── Destination ──────────────────────────────────────────────────────────────
+  - name: location-destination
     type: org.cloudfoundry.managed-service
     parameters:
       service:      destination
@@ -121,15 +121,15 @@ resources:
       config:
         HTML5Runtime_enabled: true
 
-  # ── Cloud Connector (for on-premise S/4HANA) ──────────────────────────────
-  - name: sc2-location-connectivity
+  # ── Connectivity (Cloud Connector for on-premise S4) ─────────────────────────
+  - name: location-connectivity
     type: org.cloudfoundry.managed-service
     parameters:
       service:      connectivity
       service-plan: lite
 
-  # ── HTML5 Application Repository ─────────────────────────────────────────
-  - name: sc2-location-html5-host
+  # ── HTML5 Repo ───────────────────────────────────────────────────────────────
+  - name: location-html5-host
     type: org.cloudfoundry.managed-service
     parameters:
       service:      html5-apps-repo
