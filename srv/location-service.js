@@ -14,7 +14,8 @@ function buildFullName(locationName = '', extension = '') {
 // ─── Helper: fetch CSRF token + session cookie from SC2 ─────────────────────
 async function fetchSC2CsrfToken(sc2BaseUrl, authHeader) {
   const axios = require('axios');
-  const resp  = await axios.get(`${sc2BaseUrl}/sap/c4c/api/v1/case-service/cases`, {
+  const base  = sc2BaseUrl.replace(/\/$/, '');
+  const resp  = await axios.get(`${base}/sap/c4c/api/v1/case-service/cases`, {
     params: { '$top': 1 },
     headers: {
       Authorization:  authHeader,
@@ -126,7 +127,7 @@ module.exports = cds.service.impl(async function (srv) {
     if (SC2) {
       try {
         const axios       = require('axios');
-        const destination = process.env.SC2_BASE_URL || 'http://localhost:4004/mock/sc2';
+        const destination = (process.env.SC2_BASE_URL || 'http://localhost:4004/mock/sc2').replace(/\/$/, '');
         const authHeader  = process.env.SC2_AUTH_HEADER || 'Basic CHANGEME';
 
         // Fetch CSRF token (SC2 requires this for PATCH)
