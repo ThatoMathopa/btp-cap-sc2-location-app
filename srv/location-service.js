@@ -46,8 +46,10 @@ module.exports = cds.service.impl(async function (srv) {
     try {
       const axios   = require('axios');
       const headers = {};
-      if (process.env.GIS_BASIC_AUTH) {
-        headers['Authorization'] = `Basic ${process.env.GIS_BASIC_AUTH}`;
+      const user    = process.env.GIS_USERNAME;
+      const pass    = process.env.GIS_PASSWORD;
+      if (user && pass) {
+        headers['Authorization'] = `Basic ${Buffer.from(`${user}:${pass}`).toString('base64')}`;
       }
 
       const resp = await axios.get(GIS_URL, { headers, timeout: 15000 });
