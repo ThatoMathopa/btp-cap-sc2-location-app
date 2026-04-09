@@ -5,12 +5,12 @@
   "private": true,
   "license": "UNLICENSED",
   "dependencies": {
-    "@sap/cds": "^7.9.0",
+    "@sap/cds": "^9.0.0",
     "axios": "^1.7.2",
     "express": "^4.18.3"
   },
   "devDependencies": {
-    "@sap/cds-dk": "^7.9.0"
+    "@sap/cds-dk": "^9.0.0"
   },
   "scripts": {
     "start": "cds-serve",
