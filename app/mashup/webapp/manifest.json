@@ -31,12 +31,9 @@
     "models": {
       "": {
         "dataSource": "locationService",
-        "preload": true,
         "settings": {
           "synchronizationMode": "None",
-          "operationMode": "Server",
-          "autoExpandSelect": true,
-          "earlyRequests": true
+          "operationMode": "Server"
         }
       },
       "i18n": {

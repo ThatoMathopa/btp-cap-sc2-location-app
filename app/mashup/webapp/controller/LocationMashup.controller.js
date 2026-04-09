@@ -1,106 +1,79 @@
 sap.ui.define([
   'sap/ui/core/mvc/Controller',
-  'sap/ui/model/Filter',
-  'sap/ui/model/FilterOperator',
+  'sap/ui/model/json/JSONModel',
   'sap/m/MessageBox',
   'sap/m/MessageToast',
   'sap/ui/core/Item'
-], (Controller, Filter, FilterOperator, MessageBox, MessageToast, Item) => {
+], (Controller, JSONModel, MessageBox, MessageToast, Item) => {
   'use strict';
 
   return Controller.extend('com.company.locationmashup.controller.LocationMashup', {
 
-    // ── Lifecycle ────────────────────────────────────────────────────────────
+    // ── Lifecycle ─────────────────────────────────────────────────────────────
 
     onInit() {
-      this._oRouter = this.getOwnerComponent().getRouter();
+      // Results model — bound to the table
+      this.getView().setModel(new JSONModel({ results: [], busy: false }), 'results');
 
-      // Read Case ID from URL query parameter ?caseId=XXXXX
-      // Service Cloud V2 passes context via URL when embedding a mashup.
+      // Read Case ID from URL — SC2 passes ?caseId=XXXXX when embedding mashup
       const sCaseId = this._getUrlParam('caseId') || '';
       this._getStateModel().setProperty('/caseId', sCaseId);
 
-      // Populate Ward & Region dropdowns after model is ready
-      this.getView().getModel().attachMetadataLoaded(
-        this._populateDropdowns.bind(this));
+      // Load all locations on startup
+      this._search();
     },
 
-    // ── Data events ──────────────────────────────────────────────────────────
+    // ── Search ────────────────────────────────────────────────────────────────
 
-    onDataRequested() {
-      this.byId('tableBusy').setVisible(true);
-      this._setResultCount(this._i18n('loadingText'));
-    },
-
-    onDataReceived(oEvent) {
-      this.byId('tableBusy').setVisible(false);
-      if (oEvent.getParameter('error')) return;
-      const oBinding = this._getTableBinding();
-      const count    = oBinding ? oBinding.getLength() : 0;
-      this._setResultCount(this._i18n('resultCount', [count]));
-    },
-
-    // ── Search / Filter ───────────────────────────────────────────────────────
-
-    onLiveSearch() {
-      this._applyFilters();
-    },
-
+    onLiveSearch() { this._search(); },
     onReset() {
       this.byId('globalSearch').setValue('');
-      this.byId('filterName').setValue('');
       this.byId('filterWard').setSelectedKey('');
       this.byId('filterRegion').setSelectedKey('');
-      this._applyFilters();
+      this._search();
       MessageToast.show(this._i18n('filtersCleared'));
     },
 
-    _applyFilters() {
-      const aFilters = [];
+    async _search() {
+      const query  = (this.byId('globalSearch').getValue() || '').trim();
+      const ward   = this.byId('filterWard').getSelectedKey()   || '';
+      const region = this.byId('filterRegion').getSelectedKey() || '';
 
-      // Global free-text search across all fields
-      const sGlobal = (this.byId('globalSearch').getValue() || '').trim();
-      if (sGlobal) {
-        aFilters.push(new Filter({
-          filters: [
-            new Filter('LocationName', FilterOperator.Contains, sGlobal),
-            new Filter('Ward',         FilterOperator.Contains, sGlobal),
-            new Filter('Region',       FilterOperator.Contains, sGlobal),
-            new Filter('Extension',    FilterOperator.Contains, sGlobal)
-          ],
-          and: false
-        }));
+      const oResultsModel = this.getView().getModel('results');
+      oResultsModel.setProperty('/busy', true);
+
+      try {
+        const oModel  = this.getView().getModel();
+        const oAction = oModel.bindContext('/searchLocations(...)');
+        oAction.setParameter('query',  query);
+        oAction.setParameter('ward',   ward);
+        oAction.setParameter('region', region);
+
+        await oAction.execute();
+
+        const oResult = oAction.getBoundContext().getObject();
+        const aData   = oResult?.value || (Array.isArray(oResult) ? oResult : []);
+
+        oResultsModel.setProperty('/results', aData);
+        this._setResultCount(this._i18n('resultCount', [aData.length]));
+
+        // Populate Ward/Region dropdowns from first full load
+        if (!query && !ward && !region) {
+          this._populateDropdowns(aData);
+        }
+
+      } catch (e) {
+        LOG.error('Search failed:', e);
+        this._setResultCount(this._i18n('loadingText'));
+      } finally {
+        oResultsModel.setProperty('/busy', false);
       }
-
-      // Location Name field
-      const sName = (this.byId('filterName').getValue() || '').trim();
-      if (sName) {
-        aFilters.push(new Filter('LocationName', FilterOperator.Contains, sName));
-      }
-
-      // Ward dropdown
-      const sWard = this.byId('filterWard').getSelectedKey();
-      if (sWard) {
-        aFilters.push(new Filter('Ward', FilterOperator.EQ, sWard));
-      }
-
-      // Region dropdown
-      const sRegion = this.byId('filterRegion').getSelectedKey();
-      if (sRegion) {
-        aFilters.push(new Filter('Region', FilterOperator.EQ, sRegion));
-      }
-
-      const oFinal = aFilters.length
-        ? new Filter({ filters: aFilters, and: true })
-        : null;
-
-      this._getTableBinding().filter(oFinal ? [oFinal] : []);
     },
 
-    // ── Row press ────────────────────────────────────────────────────────────
+    // ── Row press ─────────────────────────────────────────────────────────────
 
     onRowPress(oEvent) {
-      const oCtx = oEvent.getSource().getBindingContext();
+      const oCtx = oEvent.getSource().getBindingContext('results');
       this._getStateModel().setProperty('/selectedLocation', oCtx.getObject());
     },
 
@@ -109,7 +82,7 @@ sap.ui.define([
     onUseLocation(oEvent) {
       oEvent.stopPropagation?.();
 
-      const oCtx      = oEvent.getSource().getParent().getBindingContext();
+      const oCtx      = oEvent.getSource().getParent().getBindingContext('results');
       const oLocation = oCtx.getObject();
       const sCaseId   = this._getStateModel().getProperty('/caseId');
 
@@ -168,10 +141,8 @@ sap.ui.define([
           { duration: 4000 }
         );
 
-      } catch (oError) {
-        const sMsg = oError?.error?.message
-          || oError?.message
-          || this._i18n('updateError');
+      } catch (e) {
+        const sMsg = e?.error?.message || e?.message || this._i18n('updateError');
         this._setStatus(this._i18n('updateErrorDetail', [sMsg]), 'Error');
         MessageBox.error(sMsg, { title: this._i18n('updateErrorTitle') });
       } finally {
@@ -179,91 +150,53 @@ sap.ui.define([
       }
     },
 
-    // ── Refresh (replaces syncFromS4 — data is always live from S4) ──────────
+    // ── Refresh ───────────────────────────────────────────────────────────────
 
     onSync() {
-      this.getView().setBusy(true);
-      this._getTableBinding().refresh();
-      this._populateDropdowns();
-      this.getView().setBusy(false);
+      this._search();
       MessageToast.show(this._i18n('syncSuccess'));
     },
 
-    // ── Status strip ──────────────────────────────────────────────────────────
+    // ── Status ────────────────────────────────────────────────────────────────
 
-    onClearStatus() {
-      this._setStatus('', 'None');
-    },
+    onClearStatus() { this._setStatus('', 'None'); },
 
     _setStatus(sText, sState) {
-      const oState = this._getStateModel();
-      oState.setProperty('/statusMessage', sText);
-      oState.setProperty('/statusState',   sState);
+      this._getStateModel().setProperty('/statusMessage', sText);
+      this._getStateModel().setProperty('/statusState',   sState);
     },
 
-    // ── Populate Ward / Region dropdowns ─────────────────────────────────────
+    // ── Dropdowns from loaded data ────────────────────────────────────────────
 
-    _populateDropdowns() {
-      const oModel   = this.getView().getModel();
+    _populateDropdowns(aData) {
       const oWardSel = this.byId('filterWard');
       const oRegSel  = this.byId('filterRegion');
 
       const clearKeepFirst = (oSel) => {
         while (oSel.getItems().length > 1) oSel.removeItem(1);
       };
+      clearKeepFirst(oWardSel);
+      clearKeepFirst(oRegSel);
 
-      // OData V4: use bindList + requestContexts
-      oModel.bindList('/Locations', null, null, null, { $select: 'Ward' })
-        .requestContexts(0, 500).then(aCtx => {
-          clearKeepFirst(oWardSel);
-          const seen = new Set();
-          aCtx.forEach(oCtx => {
-            const w = oCtx.getProperty('Ward');
-            if (w && !seen.has(w)) {
-              seen.add(w);
-              oWardSel.addItem(new Item({ key: w, text: w }));
-            }
-          });
-        });
+      const wards   = [...new Set(aData.map(r => r.Ward).filter(Boolean))].sort();
+      const regions = [...new Set(aData.map(r => r.Region).filter(Boolean))].sort();
 
-      oModel.bindList('/Locations', null, null, null, { $select: 'Region' })
-        .requestContexts(0, 500).then(aCtx => {
-          clearKeepFirst(oRegSel);
-          const seen = new Set();
-          aCtx.forEach(oCtx => {
-            const r = oCtx.getProperty('Region');
-            if (r && !seen.has(r)) {
-              seen.add(r);
-              oRegSel.addItem(new Item({ key: r, text: r }));
-            }
-          });
-        });
+      wards.forEach(w   => oWardSel.addItem(new Item({ key: w, text: w })));
+      regions.forEach(r => oRegSel.addItem(new Item({ key: r, text: r })));
     },
 
-    // ── Helpers ──────────────────────────────────────────────────────────────
+    // ── Helpers ───────────────────────────────────────────────────────────────
 
-    _getTableBinding() {
-      return this.byId('locationsTable').getBinding('items');
-    },
-
-    _getStateModel() {
-      return this.getView().getModel('state');
-    },
-
-    _setResultCount(sText) {
-      this.byId('resultCount').setText(sText);
-    },
+    _getStateModel() { return this.getView().getModel('state'); },
+    _setResultCount(sText) { this.byId('resultCount').setText(sText); },
 
     _i18n(sKey, aArgs) {
       return this.getOwnerComponent()
-        .getModel('i18n')
-        .getResourceBundle()
-        .getText(sKey, aArgs);
+        .getModel('i18n').getResourceBundle().getText(sKey, aArgs);
     },
 
     _getUrlParam(sName) {
-      const url = new URL(window.location.href);
-      return url.searchParams.get(sName) || '';
+      return new URL(window.location.href).searchParams.get(sName) || '';
     }
 
   });

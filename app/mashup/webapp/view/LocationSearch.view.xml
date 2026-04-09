@@ -115,17 +115,8 @@
         <!-- ═══ Locations table ════════════════════════════════════════ -->
         <Table
           id="locationsTable"
-          items="{
-            path: '/Locations',
-            parameters: {
-              $select: 'LocationName,Ward,Region,Extension',
-              $orderby: 'LocationName asc'
-            },
-            events: {
-              dataRequested: '.onDataRequested',
-              dataReceived:  '.onDataReceived'
-            }
-          }"
+          items="{results>/results}"
+          busy="{results>/busy}"
           growing="true"
           growingThreshold="20"
           growingScrollToLoad="true"
@@ -155,13 +146,12 @@
           <items>
             <ColumnListItem type="Active" press=".onRowPress">
               <cells>
-                <!-- Computed field shown as primary identifier -->
-                <ObjectIdentifier title="{LocationName}" text="{Region}" />
-                <Text text="{LocationName}" />
-                <Text text="{Ward}" />
+                <ObjectIdentifier title="{results>LocationName}" text="{results>Region}" />
+                <Text text="{results>LocationName}" />
+                <Text text="{results>Ward}" />
                 <ObjectStatus
-                  text="{Extension}"
-                  state="{= ${Extension} ? 'Information' : 'None' }" />
+                  text="{results>Extension}"
+                  state="{= ${results>Extension} ? 'Information' : 'None' }" />
                 <!-- Per-row "Use this location" button -->
                 <Button
                   text="{i18n>btnUseLocation}"
