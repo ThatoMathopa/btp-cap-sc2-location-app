@@ -3,6 +3,8 @@
 const cds  = require('@sap/cds');
 const LOG  = cds.log('location-srv');
 
+// CPI endpoint that proxies S/4HANA ZCDS_GIS_CDS OData service
+const GIS_URL = 'https://cotdevcode.it-cpi033-rt.cfapps.eu10-005.hana.ondemand.com/http/Dev/S4/OData/GetGISData/ZCDS_GIS';
 
 function buildFullName(locationName = '', extension = '') {
   const n = (locationName || '').trim();
@@ -93,16 +95,18 @@ module.exports = cds.service.impl(async function (srv) {
     const { query, ward, region } = req.data;
 
     try {
-      const { executeHttpRequest } = require('@sap-cloud-sdk/http-client');
+      const axios   = require('axios');
+      const headers = {};
+      const user    = process.env.GIS_USERNAME;
+      const pass    = process.env.GIS_PASSWORD;
+      if (user && pass) {
+        headers['Authorization'] = `Basic ${Buffer.from(`${user}:${pass}`).toString('base64')}`;
+      }
 
-      // Credentials are stored in the BTP Destination service under "GIS_DESTINATION"
-      // — no env vars needed, auth is handled by the Cloud SDK automatically.
-      LOG.info('Fetching GIS data via BTP destination GIS_DESTINATION');
-      const resp = await executeHttpRequest(
-        { destinationName: 'GIS_DESTINATION' },
-        { method: 'GET', url: '/', timeout: 15000 }
-      );
+      LOG.info(`Calling GIS URL: ${GIS_URL}`);
+      LOG.info(`Auth header present: ${!!headers['Authorization']}`);
 
+      const resp = await axios.get(GIS_URL, { headers, timeout: 15000 });
       LOG.info(`GIS response status: ${resp.status}`);
       LOG.info(`GIS raw response (first 500 chars): ${String(resp.data).substring(0, 500)}`);
 
