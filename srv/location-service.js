@@ -9,13 +9,13 @@ function buildFullName(locationName = '', extension = '') {
   return e ? `${n} (${e})` : n;
 }
 
-// Normalise a raw row from ZCDS_GIS (lowercase ABAP field names) to PascalCase for the UI
+// Normalise a raw row from ZCDS_GIS — fields are LocationName, Ward, Region, Extension
 function normalise(r) {
-  const ext = String(r.extension ?? r.Extension ?? '').trim();
+  const ext = String(r.Extension ?? '').trim();
   return {
-    LocationName : (r.name       || r.LocationName || '').trim(),
-    Ward         : (r.ward       || r.Ward         || '').trim(),
-    Region       : (r.region     || r.Region       || '').trim(),
+    LocationName : (r.LocationName || '').trim(),
+    Ward         : (r.Ward         || '').trim(),
+    Region       : (r.Region       || '').trim(),
     Extension    : (ext === '0') ? '' : ext
   };
 }
