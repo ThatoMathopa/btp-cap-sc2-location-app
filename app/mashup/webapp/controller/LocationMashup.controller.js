@@ -63,7 +63,7 @@ sap.ui.define([
         }
 
       } catch (e) {
-        LOG.error('Search failed:', e);
+        console.error('Search failed:', e);
         this._setResultCount(this._i18n('loadingText'));
       } finally {
         oResultsModel.setProperty('/busy', false);
