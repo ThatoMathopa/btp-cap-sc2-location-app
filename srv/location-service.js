@@ -126,15 +126,33 @@ module.exports = cds.service.impl(async function (srv) {
     }
 
     try {
-      const casePath = `/sap/c4c/api/v1/case-service/cases/${caseId}`;
+      const { executeHttpRequest } = require('@sap-cloud-sdk/http-client');
+      const destination = { destinationName: 'Case_Object' };
+      const casePath    = `/sap/c4c/api/v1/case-service/cases/${caseId}`;
 
-      // If-Match: * tells SC2 to apply the PATCH regardless of concurrent version
-      // checks, avoiding "Data has been changed in a parallel session" errors.
-      await SC2.send({
+      // Step 1: GET the case — Cloud SDK exposes raw response headers so we can
+      // read the ETag that CAP's send() would silently discard.
+      LOG.info(`GET ${casePath} to retrieve ETag`);
+      const getResp = await executeHttpRequest(destination, {
+        method  : 'GET',
+        url     : casePath,
+        headers : { 'Accept': 'application/json' }
+      });
+
+      const etag =
+        getResp.headers['etag'] ||
+        getResp.headers['ETag'] ||
+        (getResp.data && getResp.data['@odata.etag']) ||
+        '*';
+
+      LOG.info(`ETag for case ${caseId}: ${etag}`);
+
+      // Step 2: PATCH with the real ETag in If-Match
+      await executeHttpRequest(destination, {
         method  : 'PATCH',
-        path    : casePath,
-        data    : sc2Payload,
-        headers : { 'Content-Type': 'application/json', 'If-Match': '*' }
+        url     : casePath,
+        headers : { 'Content-Type': 'application/json', 'If-Match': etag },
+        data    : sc2Payload
       });
 
       return {
@@ -142,9 +160,11 @@ module.exports = cds.service.impl(async function (srv) {
         message : `Case ${caseId} updated with location "${fullName}".`
       };
     } catch (e) {
-      const msg = e.message || 'Unknown error';
-      LOG.error(`SC2 PATCH failed for case ${caseId}:`, msg);
-      return req.error(502, `SC2 update failed: ${msg}`);
+      const status = e.response && e.response.status;
+      const body   = e.response && JSON.stringify(e.response.data).substring(0, 300);
+      LOG.error(`SC2 PATCH failed for case ${caseId}: ${e.message}`);
+      if (status) LOG.error(`SC2 HTTP ${status}: ${body}`);
+      return req.error(502, `SC2 update failed: ${e.message}`);
     }
   });
 });
