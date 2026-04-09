@@ -84,12 +84,14 @@ module.exports = cds.service.impl(async function (srv) {
 
     const fullName = buildFullName(locationName, extension);
 
-    // SC2 custom extension fields use _KUT suffix
+    // SC2 case extensions object — field names match SC2 custom extension schema
     const sc2Payload = {
-      LocationName_KUT : locationName,
-      Ward_KUT         : ward      || '',
-      Region_KUT       : region    || '',
-      Extension_KUT    : extension || ''
+      extensions: {
+        LocationName : locationName,
+        Ward         : ward      || '',
+        Region       : region    || '',
+        Extension    : extension || ''
+      }
     };
 
     LOG.info(`Updating SC2 case ${caseId} with location "${fullName}"`);
