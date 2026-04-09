@@ -34,7 +34,29 @@ modules:
       - name: location-destination
       - name: location-connectivity
 
-  # ── 2. UI App ────────────────────────────────────────────────────────────────
+  # ── 2. Approuter ─────────────────────────────────────────────────────────────
+  - name: location-approuter
+    type: approuter.nodejs
+    path: app/router
+    parameters:
+      memory: 128M
+      disk-quota: 256M
+    requires:
+      - name: location-xsuaa
+      - name: location-destination
+      - name: location-html5-runtime
+      - name: srv-api
+        group: destinations
+        properties:
+          name: srv-api
+          url: ~{srv-url}
+          forwardAuthToken: true
+    provides:
+      - name: app-api
+        properties:
+          app-url: ${default-url}
+
+  # ── 3. UI App ────────────────────────────────────────────────────────────────
   - name: location-ui
     type: html5
     path: app/mashup
@@ -128,3 +150,10 @@ resources:
     parameters:
       service:      html5-apps-repo
       service-plan: app-host
+
+  # ── HTML5 Runtime ─────────────────────────────────────────────────────────────
+  - name: location-html5-runtime
+    type: org.cloudfoundry.managed-service
+    parameters:
+      service:      html5-apps-repo
+      service-plan: app-runtime
