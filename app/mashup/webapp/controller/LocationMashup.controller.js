@@ -171,32 +171,24 @@ sap.ui.define([
           { duration: 2000 }
         );
 
-        // Close the SC2 mashup dialog after a short delay.
-        // SC2 embeds the mashup in an iframe — browsers block window.close() on iframes,
-        // so we broadcast all known SC2 / C4C / Fiori postMessage close formats and
-        // attempt a history.back() as a final fallback.
+        // After the toast, notify the parent (SC2 iframe) and close the tab/popup.
         setTimeout(() => {
-          const targets = [window.parent, window.top];
-          const messages = [
-            { action : 'close'         },
-            { action : 'CLOSE'         },
-            { type   : 'close'         },
-            { type   : 'CLOSE'         },
-            { type   : 'MASHUP_CLOSE'  },
-            { event  : 'MASHUP_CLOSED' },
-            { msg    : 'sap.csc.close' },
-            'close'
-          ];
-          targets.forEach(t => {
-            messages.forEach(m => {
-              try { t.postMessage(m, '*'); } catch (_) {}
-              try { t.postMessage(typeof m === 'string' ? m : JSON.stringify(m), '*'); } catch (_) {}
-            });
-          });
-          // Last-resort fallbacks
-          try { window.close(); }    catch (_) {}
-          try { history.back(); }    catch (_) {}
-        }, 1800);
+          // 1. Notify parent frame (SC2 embeds this as an iframe)
+          try { window.parent.postMessage({ type: 'LOCATION_SAVED', caseId: sCaseId }, '*'); } catch (_) {}
+
+          // 2. Attempt to close the tab/popup
+          try { window.close(); } catch (_) {}
+
+          // 3. Fallback: replace body in case the browser blocks window.close()
+          setTimeout(() => {
+            try {
+              document.body.innerHTML =
+                '<div style="font-family:sans-serif;text-align:center;margin-top:20vh;font-size:1.4rem;">' +
+                'Location Saved ✓ You may close this tab.' +
+                '</div>';
+            } catch (_) {}
+          }, 300);
+        }, 2000);
 
       } catch (e) {
         const sMsg = e?.error?.message || e?.message || this._i18n('updateError');
