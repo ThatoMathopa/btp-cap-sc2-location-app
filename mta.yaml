@@ -10,7 +10,7 @@ build-parameters:
   before-all:
     - builder: custom
       commands:
-        - npm install --omit=dev
+        - npm install --ignore-scripts
         - npx cds build --production
 
 modules:
@@ -25,7 +25,9 @@ modules:
     properties:
       NODE_ENV: production
     build-parameters:
-      builder: npm
+      builder: custom
+      commands:
+        - npm install --omit=dev --ignore-scripts
     provides:
       - name: srv-api
         properties:
