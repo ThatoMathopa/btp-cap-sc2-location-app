@@ -33,7 +33,6 @@ modules:
         properties:
           srv-url: ${default-url}
     requires:
-      - name: location-xsuaa
       - name: location-destination
       - name: location-connectivity
 
@@ -50,30 +49,18 @@ modules:
         - bash -c "cp -r ../mashup/webapp ./webapp"
         - npm install
     requires:
-      - name: location-xsuaa
       - name: srv-api
         group: destinations
         properties:
           name: srv-api
           url: ~{srv-url}
-          forwardAuthToken: true
+          forwardAuthToken: false
     provides:
       - name: app-api
         properties:
           app-url: ${default-url}
 
 resources:
-
-  # ── XSUAA ────────────────────────────────────────────────────────────────────
-  - name: location-xsuaa
-    type: org.cloudfoundry.managed-service
-    parameters:
-      service:      xsuaa
-      service-plan: application
-      path:         ./xs-security.json
-      config:
-        xsappname: location-app
-        tenant-mode: dedicated
 
   # ── Destination (needed by backend for THD_NEW and Case_Object) ──────────────
   - name: location-destination

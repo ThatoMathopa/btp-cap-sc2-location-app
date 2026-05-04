@@ -7,6 +7,8 @@ sap.ui.define([
 ], (Controller, JSONModel, MessageBox, MessageToast, Item) => {
   'use strict';
 
+  const SC2_BASE_URL = 'https://my1001219.de1.test.crm.cloud.sap';
+
   return Controller.extend('com.company.locationmashup.controller.LocationMashup', {
 
     // ── Lifecycle ─────────────────────────────────────────────────────────────
@@ -171,23 +173,10 @@ sap.ui.define([
           { duration: 2000 }
         );
 
-        // After the toast, notify the parent (SC2 iframe) and close the tab/popup.
-        setTimeout(() => {
-          // 1. Notify parent frame (SC2 embeds this as an iframe)
-          try { window.parent.postMessage({ type: 'LOCATION_SAVED', caseId: sCaseId }, '*'); } catch (_) {}
-
-          // 2. Attempt to close the tab/popup
-          try { window.close(); } catch (_) {}
-
-          // 3. Fallback: replace body in case the browser blocks window.close()
-          setTimeout(() => {
-            try {
-              document.body.innerHTML =
-                '<div style="font-family:sans-serif;text-align:center;margin-top:20vh;font-size:1.4rem;">' +
-                'Location Saved ✓ You may close this tab.' +
-                '</div>';
-            } catch (_) {}
-          }, 300);
+        // Redirect back to SC2 case after successful update
+        var redirectCaseId = sCaseId;
+        setTimeout(function() {
+          window.location.href = SC2_BASE_URL + "/ui#Case-Display&/Cases('" + redirectCaseId + "')";
         }, 2000);
 
       } catch (e) {

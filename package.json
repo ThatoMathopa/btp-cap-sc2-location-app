@@ -34,6 +34,11 @@
       "db": {
         "kind": "sqlite",
         "[production]": { "credentials": { "url": ":memory:" } }
+      },
+      "[production]": {
+        "auth": {
+          "kind": "dummy"
+        }
       }
     }
   },

@@ -1,16 +1,16 @@
 {
   "welcomeFile": "/index.html",
-  "authenticationMethod": "route",
+  "authenticationMethod": "none",
   "routes": [
     {
       "source": "^/odata/v4/(.*)$",
       "destination": "srv-api",
-      "authenticationType": "xsuaa"
+      "authenticationType": "none"
     },
     {
       "source": "^(.*)$",
       "localDir": "webapp",
-      "authenticationType": "xsuaa"
+      "authenticationType": "none"
     }
   ]
 }
