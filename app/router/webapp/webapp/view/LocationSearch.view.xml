@@ -1,0 +1,204 @@
+<mvc:View
+  controllerName="com.company.locationmashup.controller.LocationMashup"
+  xmlns:mvc="sap.ui.core.mvc"
+  xmlns="sap.m"
+  xmlns:l="sap.ui.layout"
+  xmlns:core="sap.ui.core"
+  xmlns:html="http://www.w3.org/1999/xhtml"
+  displayBlock="true">
+
+  <Page id="mashupPage" showHeader="false">
+    <content>
+      <VBox fitContainer="true">
+
+        <!-- City of Tshwane Header -->
+        <HBox
+          alignItems="Center"
+          justifyContent="SpaceBetween"
+          class="sapUiSmallMargin">
+          <HBox alignItems="Center">
+            <html:img
+              src="https://upload.wikimedia.org/wikipedia/en/thumb/6/6c/Tshwane.svg/150px-Tshwane.svg.png"
+              alt="City of Tshwane"
+              style="height:48px;margin-right:12px;" />
+            <VBox>
+              <Title text="GIS Location Search" level="H3" titleStyle="H3" />
+              <Label text="City of Tshwane Metropolitan Municipality" class="sapUiTinyMarginTop" />
+            </VBox>
+          </HBox>
+          <HBox alignItems="Center" visible="{= !!${state>/caseId} }">
+            <html:div style="background:#1a5276;color:#fff;padding:6px 14px;border-radius:6px;font-size:0.85rem;display:flex;align-items:center;">
+              <core:Icon src="sap-icon://crm-service-manager" color="#fff" size="1rem" class="sapUiSmallMarginEnd" />
+              <html:span style="margin-right:6px;opacity:0.8;">Case:</html:span>
+              <html:span style="font-weight:600;">
+                <Text text="{state>/caseId}" />
+              </html:span>
+            </html:div>
+          </HBox>
+        </HBox>
+
+        <!-- Tshwane accent bar -->
+        <html:div style="height:4px;background:linear-gradient(90deg,#1a5276 0%,#2e86c1 40%,#27ae60 70%,#f39c12 100%);margin:0 0 8px 0;" />
+
+        <!-- Status message -->
+        <MessageStrip
+          id="statusStrip"
+          text="{state>/statusMessage}"
+          type="{state>/statusState}"
+          showIcon="true"
+          showCloseButton="true"
+          visible="{= !!${state>/statusMessage} }"
+          close=".onClearStatus"
+          class="sapUiSmallMarginBegin sapUiSmallMarginEnd sapUiSmallMarginBottom" />
+
+        <!-- Missing case ID warning -->
+        <MessageStrip
+          text="No Case ID provided. Open this app from a Service Cloud case to enable location updates."
+          type="Warning"
+          showIcon="true"
+          visible="{= !${state>/caseId} }"
+          class="sapUiSmallMarginBegin sapUiSmallMarginEnd sapUiSmallMarginBottom" />
+
+        <!-- Search and Filter Panel -->
+        <Panel
+          expandable="true"
+          expanded="true"
+          class="sapUiSmallMarginBegin sapUiSmallMarginEnd">
+          <headerToolbar>
+            <Toolbar>
+              <core:Icon src="sap-icon://search" color="#1a5276" class="sapUiSmallMarginEnd" />
+              <Title text="Search and Filter Locations" level="H5" />
+              <ToolbarSpacer />
+              <Button
+                text="Reset Filters"
+                icon="sap-icon://clear-filter"
+                press=".onReset"
+                type="Transparent" />
+              <Button
+                text="Sync from S/4HANA"
+                icon="sap-icon://synchronize"
+                press=".onSync"
+                type="Ghost"
+                tooltip="Refresh location data from S/4HANA" />
+            </Toolbar>
+          </headerToolbar>
+          <content>
+            <l:Grid defaultSpan="XL3 L3 M6 S12" class="sapUiTinyMarginTop sapUiSmallMarginBottom">
+              <l:content>
+                <VBox>
+                  <Label text="Search" design="Bold" labelFor="globalSearch" />
+                  <SearchField
+                    id="globalSearch"
+                    placeholder="Search name, ward, region, extension..."
+                    liveChange=".onLiveSearch"
+                    search=".onLiveSearch"
+                    showRefreshButton="false"
+                    width="100%" />
+                </VBox>
+                <VBox>
+                  <Label text="Location Name" design="Bold" labelFor="filterName" />
+                  <Input
+                    id="filterName"
+                    placeholder="Type to filter..."
+                    liveChange=".onLiveSearch"
+                    width="100%" />
+                </VBox>
+                <VBox>
+                  <Label text="Ward" design="Bold" labelFor="filterWard" />
+                  <Select id="filterWard" change=".onLiveSearch" width="100%" forceSelection="false">
+                    <core:Item key="" text="All Wards" />
+                  </Select>
+                </VBox>
+                <VBox>
+                  <Label text="Region" design="Bold" labelFor="filterRegion" />
+                  <Select id="filterRegion" change=".onLiveSearch" width="100%" forceSelection="false">
+                    <core:Item key="" text="All Regions" />
+                  </Select>
+                </VBox>
+              </l:content>
+            </l:Grid>
+          </content>
+        </Panel>
+
+        <!-- Result count -->
+        <HBox alignItems="Center" justifyContent="SpaceBetween" class="sapUiSmallMargin">
+          <HBox alignItems="Center">
+            <core:Icon src="sap-icon://list" color="#1a5276" size="1rem" class="sapUiSmallMarginEnd" />
+            <Text id="resultCount" text="Loading locations..." />
+          </HBox>
+          <BusyIndicator id="tableBusy" visible="false" size="0.7rem" />
+        </HBox>
+
+        <!-- Locations table -->
+        <Table
+          id="locationsTable"
+          items="{results>/results}"
+          busy="{results>/busy}"
+          growing="true"
+          growingThreshold="25"
+          growingScrollToLoad="true"
+          mode="SingleSelectMaster"
+          noDataText="No locations found. Adjust your filters or sync from S/4HANA."
+          sticky="ColumnHeaders"
+          class="sapUiSmallMarginBegin sapUiSmallMarginEnd sapUiSmallMarginBottom"
+          alternateRowColors="true">
+
+          <headerToolbar>
+            <Toolbar>
+              <core:Icon src="sap-icon://map" color="#1a5276" class="sapUiSmallMarginEnd" />
+              <Title text="Location Results" level="H5" />
+            </Toolbar>
+          </headerToolbar>
+
+          <columns>
+            <Column width="28%">
+              <Text text="Location" />
+            </Column>
+            <Column width="22%" minScreenWidth="Tablet" demandPopin="true">
+              <Text text="Township / Farm" />
+            </Column>
+            <Column width="12%" minScreenWidth="Tablet" demandPopin="true" hAlign="Center">
+              <Text text="Ward" />
+            </Column>
+            <Column width="14%" minScreenWidth="Desktop" demandPopin="true" hAlign="Center">
+              <Text text="Region" />
+            </Column>
+            <Column width="10%" minScreenWidth="Desktop" demandPopin="true" hAlign="Center">
+              <Text text="Extension" />
+            </Column>
+            <Column width="14%" hAlign="End">
+              <Text text="Action" />
+            </Column>
+          </columns>
+
+          <items>
+            <ColumnListItem type="Active" press=".onRowPress">
+              <cells>
+                <ObjectIdentifier
+                  title="{results>LocationName}"
+                  text="{= ${results>Extension} ? 'Ext: ' + ${results>Extension} : '' }" />
+                <Text text="{results>LocationName}" />
+                <ObjectStatus text="{results>Ward}" state="Information" inverted="true" />
+                <ObjectStatus text="{results>Region}" state="Success" inverted="false" />
+                <Text text="{= ${results>Extension} === '0' ? '' : ${results>Extension} }" />
+                <Button
+                  text="Select"
+                  type="Emphasized"
+                  icon="sap-icon://accept"
+                  press=".onUseLocation"
+                  enabled="{= !!${state>/caseId} }"
+                  tooltip="{= !${state>/caseId} ? 'Open from SC2 case to enable' : 'Assign this location to the case' }" />
+              </cells>
+            </ColumnListItem>
+          </items>
+        </Table>
+
+        <!-- Footer -->
+        <html:div style="text-align:center;padding:12px;color:#7f8c8d;font-size:0.75rem;border-top:1px solid #ecf0f1;margin:0 16px;">
+          City of Tshwane Metropolitan Municipality — GIS Location Service — Powered by SAP BTP
+        </html:div>
+
+      </VBox>
+    </content>
+  </Page>
+</mvc:View>

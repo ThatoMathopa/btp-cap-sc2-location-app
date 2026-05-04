@@ -1,0 +1,80 @@
+{
+  "_version": "1.65.0",
+  "sap.app": {
+    "id": "com.company.locationmashup",
+    "type": "application",
+    "i18n": "i18n/i18n.properties",
+    "applicationVersion": { "version": "1.0.0" },
+    "title": "{{appTitle}}",
+    "description": "{{appDescription}}",
+    "dataSources": {
+      "locationService": {
+        "uri": "/odata/v4/location/",
+        "type": "OData",
+        "settings": { "odataVersion": "4.0" }
+      }
+    }
+  },
+  "sap.ui": {
+    "technology": "UI5",
+    "deviceTypes": { "desktop": true, "tablet": true, "phone": true }
+  },
+  "sap.ui5": {
+    "flexEnabled": false,
+    "dependencies": {
+      "minUI5Version": "1.120.0",
+      "libs": {
+        "sap.m": {}, "sap.ui.core": {}, "sap.f": {}, "sap.ui.layout": {}
+      }
+    },
+    "contentDensities": { "compact": true, "cozy": true },
+    "models": {
+      "": {
+        "dataSource": "locationService",
+        "settings": {
+          "synchronizationMode": "None",
+          "operationMode": "Server"
+        }
+      },
+      "i18n": {
+        "type": "sap.ui.model.resource.ResourceModel",
+        "settings": { "bundleName": "com.company.locationmashup.i18n.i18n" }
+      },
+      "state": {
+        "type": "sap.ui.model.json.JSONModel",
+        "settings": {
+          "data": {
+            "caseId": "",
+            "busy": false,
+            "selectedLocation": null,
+            "statusMessage": "",
+            "statusState": "None",
+            "wardItems": [],
+            "regionItems": []
+          }
+        }
+      }
+    },
+    "routing": {
+      "config": {
+        "routerClass": "sap.m.routing.Router",
+        "viewType": "XML",
+        "viewPath": "com.company.locationmashup.view",
+        "controlId": "app",
+        "controlAggregation": "pages",
+        "async": true
+      },
+      "routes": [
+        { "pattern": "", "name": "Main", "target": "Main" }
+      ],
+      "targets": {
+        "Main": { "viewLevel": 1, "viewId": "Main", "viewName": "LocationSearch" }
+      }
+    },
+    "rootView": {
+      "viewName": "com.company.locationmashup.view.App",
+      "type": "XML",
+      "id": "app"
+    }
+  }
+}
