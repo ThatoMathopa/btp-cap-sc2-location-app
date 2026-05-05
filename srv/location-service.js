@@ -162,9 +162,7 @@ module.exports = cds.service.impl(async function (srv) {
         Suburb           : locationName,
         Ward             : ward      || '',
         Region           : region    || '',
-        Extension        : extension || '',
-        Street           : '0',
-        StreetNo         : '0'
+        Extension        : extension || ''
       }
     };
 
@@ -213,11 +211,17 @@ module.exports = cds.service.impl(async function (srv) {
         message : `Case ${caseId} updated with location "${fullName}".`
       };
     } catch (e) {
-      const status = e.response && e.response.status;
-      const body   = e.response && JSON.stringify(e.response.data).substring(0, 300);
+      const status  = e.response && e.response.status;
+      const body    = e.response && JSON.stringify(e.response.data);
       LOG.error(`SC2 PATCH failed for case ${caseId}: ${e.message}`);
-      if (status) LOG.error(`SC2 HTTP ${status}: ${body}`);
-      return req.error(502, `SC2 update failed: ${e.message}`);
+      if (status) LOG.error(`SC2 HTTP ${status} — full response: ${body}`);
+      LOG.error(`SC2 payload sent: ${JSON.stringify(sc2Payload)}`);
+      const sc2Msg = (e.response && e.response.data && (
+        e.response.data.message ||
+        e.response.data.error?.message ||
+        (e.response.data.errors && JSON.stringify(e.response.data.errors))
+      )) || e.message;
+      return req.error(502, `SC2 update failed: ${sc2Msg}`);
     }
   });
 });
