@@ -173,15 +173,24 @@ sap.ui.define([
           { duration: 2000 }
         );
 
-        // Redirect back to SC2 case after successful update
-        // Use window.top so the redirect escapes the SC2 iframe
-        var redirectCaseId = sCaseId;
+        // Navigate SC2 back to the case and close this mashup.
+        // SC2 URL mashups open either as a popup (window.opener exists)
+        // or as an embedded iframe (window.top !== window).
+        var sCaseUrl = SC2_BASE_URL + "/ui#Case-Display&/Cases('" + sCaseId + "')";
         setTimeout(function() {
-          try {
-            window.top.location.href = SC2_BASE_URL + "/ui#Case-Display&/Cases('" + redirectCaseId + "')";
-          } catch (_) {
-            // Fallback if top is cross-origin sandboxed
-            window.location.href = SC2_BASE_URL + "/ui#Case-Display&/Cases('" + redirectCaseId + "')";
+          if (window.opener && !window.opener.closed) {
+            // Opened as a popup/new tab by SC2 — navigate the SC2 shell and close this tab
+            try { window.opener.location.href = sCaseUrl; } catch (_) {}
+            try { window.close(); } catch (_) {}
+          } else if (window.top !== window) {
+            // Embedded as an iframe — navigate the top frame (SC2 shell)
+            try { window.top.location.href = sCaseUrl; } catch (_) {
+              // Cross-origin sandbox blocks top navigation — post message to SC2 shell instead
+              window.parent.postMessage({ action: 'navigateTo', url: sCaseUrl }, SC2_BASE_URL);
+            }
+          } else {
+            // Standalone tab fallback
+            window.location.href = sCaseUrl;
           }
         }, 2000);
 
