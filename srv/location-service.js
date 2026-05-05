@@ -203,16 +203,19 @@ module.exports = cds.service.impl(async function (srv) {
         headers : { 'Accept': 'application/json' }
       });
 
+      // SC2 returns either a direct object or { value: [caseObj] } — handle both
+      const caseData = (getResp.data?.value?.[0]) || getResp.data || {};
+
       const etag =
         getResp.headers['etag'] ||
         getResp.headers['ETag'] ||
-        (getResp.data && getResp.data['@odata.etag']) ||
+        caseData['@odata.etag'] ||
         '*';
 
       LOG.info(`ETag for case ${caseId}: ${etag}`);
 
       // Preserve existing extension values that SC2 validation requires
-      const existingExt = (getResp.data && getResp.data.extensions) || {};
+      const existingExt = caseData.extensions || {};
       LOG.info(`Existing extensions from GET: ${JSON.stringify(existingExt)}`);
 
       // Merge: keep all existing extension values, override only our location fields
@@ -237,11 +240,11 @@ module.exports = cds.service.impl(async function (srv) {
       LOG.error(`SC2 PATCH failed for case ${caseId}: ${e.message}`);
       if (status) LOG.error(`SC2 HTTP ${status} — full response: ${body}`);
       LOG.error(`SC2 payload sent: ${JSON.stringify(sc2Payload)}`);
-      const sc2Msg = (e.response && e.response.data && (
-        e.response.data.message ||
-        e.response.data.error?.message ||
-        (e.response.data.errors && JSON.stringify(e.response.data.errors))
-      )) || e.message;
+      const errBody  = e.response?.data?.error || {};
+      const details  = Array.isArray(errBody.details) && errBody.details.length
+        ? errBody.details.map(d => d.message).join('; ')
+        : null;
+      const sc2Msg   = details || errBody.message || e.response?.data?.message || e.message;
       return req.error(502, `SC2 update failed: ${sc2Msg}`);
     }
   });
