@@ -181,9 +181,10 @@ module.exports = cds.service.impl(async function (srv) {
       const destination = { destinationName: 'Case_Object' };
       const casePath    = `/sap/c4c/api/v1/case-service/cases/${caseId}`;
 
-      // Step 1: GET the case — Cloud SDK exposes raw response headers so we can
-      // read the ETag that CAP's send() would silently discard.
-      LOG.info(`GET ${casePath} to retrieve ETag`);
+      // Step 1: GET the case — read ETag AND existing extension values so we
+      // can pass them through in the PATCH (SC2 custom validation requires
+      // MobileNumber to be present whenever extensions are updated).
+      LOG.info(`GET ${casePath} to retrieve ETag and existing extensions`);
       const getResp = await executeHttpRequest(destination, {
         method  : 'GET',
         url     : casePath,
@@ -197,6 +198,14 @@ module.exports = cds.service.impl(async function (srv) {
         '*';
 
       LOG.info(`ETag for case ${caseId}: ${etag}`);
+
+      // Preserve existing extension values that SC2 validation requires
+      const existingExt = (getResp.data && getResp.data.extensions) || {};
+      LOG.info(`Existing extensions from GET: ${JSON.stringify(existingExt)}`);
+
+      // Merge: keep all existing extension values, override only our location fields
+      sc2Payload.extensions = Object.assign({}, existingExt, sc2Payload.extensions);
+      LOG.info(`Final PATCH payload: ${JSON.stringify(sc2Payload)}`);
 
       // Step 2: PATCH with the real ETag in If-Match
       await executeHttpRequest(destination, {
