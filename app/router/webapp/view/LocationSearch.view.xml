@@ -7,38 +7,36 @@
   xmlns:html="http://www.w3.org/1999/xhtml"
   displayBlock="true">
 
-  <Page id="mashupPage" showHeader="false">
+  <Page id="mashupPage" showHeader="false" enableScrolling="true">
     <content>
-      <VBox fitContainer="true">
+      <VBox>
 
         <!-- City of Tshwane Header -->
         <HBox
           alignItems="Center"
           justifyContent="SpaceBetween"
-          class="sapUiSmallMargin">
+          class="sapUiTinyMarginBegin sapUiTinyMarginEnd sapUiTinyMarginTop sapUiTinyMarginBottom">
           <HBox alignItems="Center">
-            <html:img
-              src="https://upload.wikimedia.org/wikipedia/en/thumb/6/6c/Tshwane.svg/150px-Tshwane.svg.png"
-              alt="City of Tshwane"
-              style="height:48px;margin-right:12px;" />
+            <!-- CoT logo badge (CSS — no external image dependency) -->
+            <html:div style="width:40px;height:40px;background:#1a5276;border-radius:50%;display:flex;align-items:center;justify-content:center;margin-right:10px;flex-shrink:0;">
+              <html:span style="color:#fff;font-weight:700;font-size:0.75rem;letter-spacing:0.05em;line-height:1;">CoT</html:span>
+            </html:div>
             <VBox>
-              <Title text="GIS Location Search" level="H3" titleStyle="H3" />
-              <Label text="City of Tshwane Metropolitan Municipality" class="sapUiTinyMarginTop" />
+              <Title text="GIS Location Search" level="H4" titleStyle="H4" />
+              <Label text="City of Tshwane Metropolitan Municipality" />
             </VBox>
           </HBox>
           <HBox alignItems="Center" visible="{= !!${state>/caseId} }">
-            <html:div style="background:#1a5276;color:#fff;padding:6px 14px;border-radius:6px;font-size:0.85rem;display:flex;align-items:center;">
-              <core:Icon src="sap-icon://crm-service-manager" color="#fff" size="1rem" class="sapUiSmallMarginEnd" />
-              <html:span style="margin-right:6px;opacity:0.8;">Case:</html:span>
-              <html:span style="font-weight:600;">
-                <Text text="{state>/caseId}" />
-              </html:span>
+            <html:div style="background:#1a5276;color:#fff;padding:4px 10px;border-radius:4px;font-size:0.8rem;display:flex;align-items:center;gap:6px;">
+              <core:Icon src="sap-icon://crm-service-manager" color="#fff" size="0.875rem" />
+              <html:span style="opacity:0.8;">Case:</html:span>
+              <html:span style="font-weight:600;"><Text text="{state>/caseId}" /></html:span>
             </html:div>
           </HBox>
         </HBox>
 
         <!-- Tshwane accent bar -->
-        <html:div style="height:4px;background:linear-gradient(90deg,#1a5276 0%,#2e86c1 40%,#27ae60 70%,#f39c12 100%);margin:0 0 8px 0;" />
+        <html:div style="height:3px;background:linear-gradient(90deg,#1a5276 0%,#2e86c1 40%,#27ae60 70%,#f39c12 100%);" />
 
         <!-- Status message -->
         <MessageStrip
@@ -49,7 +47,7 @@
           showCloseButton="true"
           visible="{= !!${state>/statusMessage} }"
           close=".onClearStatus"
-          class="sapUiSmallMarginBegin sapUiSmallMarginEnd sapUiSmallMarginBottom" />
+          class="sapUiTinyMarginBegin sapUiTinyMarginEnd sapUiTinyMarginTop" />
 
         <!-- Missing case ID warning -->
         <MessageStrip
@@ -57,39 +55,37 @@
           type="Warning"
           showIcon="true"
           visible="{= !${state>/caseId} }"
-          class="sapUiSmallMarginBegin sapUiSmallMarginEnd sapUiSmallMarginBottom" />
+          class="sapUiTinyMarginBegin sapUiTinyMarginEnd sapUiTinyMarginTop" />
 
         <!-- Search and Filter Panel -->
         <Panel
           expandable="true"
           expanded="true"
-          class="sapUiSmallMarginBegin sapUiSmallMarginEnd">
+          class="sapUiTinyMarginBegin sapUiTinyMarginEnd sapUiTinyMarginTop">
           <headerToolbar>
-            <Toolbar>
-              <core:Icon src="sap-icon://search" color="#1a5276" class="sapUiSmallMarginEnd" />
-              <Title text="Search and Filter Locations" level="H5" />
+            <Toolbar height="2.5rem">
+              <Title text="Search and Filter" level="H5" />
               <ToolbarSpacer />
               <Button
-                text="Reset Filters"
+                text="Reset"
                 icon="sap-icon://clear-filter"
                 press=".onReset"
                 type="Transparent" />
               <Button
-                text="Sync from S/4HANA"
                 icon="sap-icon://synchronize"
                 press=".onSync"
-                type="Ghost"
-                tooltip="Refresh location data from S/4HANA" />
+                type="Transparent"
+                tooltip="Sync from S/4HANA" />
             </Toolbar>
           </headerToolbar>
           <content>
-            <l:Grid defaultSpan="XL3 L3 M6 S12" class="sapUiTinyMarginTop sapUiSmallMarginBottom">
+            <l:Grid defaultSpan="XL3 L3 M6 S12" class="sapUiTinyMarginTop">
               <l:content>
                 <VBox>
                   <Label text="Search" design="Bold" labelFor="globalSearch" />
                   <SearchField
                     id="globalSearch"
-                    placeholder="Search name, ward, region, extension..."
+                    placeholder="Name, ward, region..."
                     liveChange=".onLiveSearch"
                     search=".onLiveSearch"
                     showRefreshButton="false"
@@ -99,7 +95,7 @@
                   <Label text="Location Name" design="Bold" labelFor="filterName" />
                   <Input
                     id="filterName"
-                    placeholder="Type to filter..."
+                    placeholder="Filter by name..."
                     liveChange=".onLiveSearch"
                     width="100%" />
                 </VBox>
@@ -121,12 +117,9 @@
         </Panel>
 
         <!-- Result count -->
-        <HBox alignItems="Center" justifyContent="SpaceBetween" class="sapUiSmallMargin">
-          <HBox alignItems="Center">
-            <core:Icon src="sap-icon://list" color="#1a5276" size="1rem" class="sapUiSmallMarginEnd" />
-            <Text id="resultCount" text="Loading locations..." />
-          </HBox>
-          <BusyIndicator id="tableBusy" visible="false" size="0.7rem" />
+        <HBox alignItems="Center" class="sapUiTinyMarginBegin sapUiTinyMarginEnd sapUiTinyMarginTop sapUiTinyMarginBottom">
+          <core:Icon src="sap-icon://list" color="#1a5276" size="0.875rem" class="sapUiTinyMarginEnd" />
+          <Text id="resultCount" text="Loading locations..." />
         </HBox>
 
         <!-- Locations table -->
@@ -135,38 +128,28 @@
           items="{results>/results}"
           busy="{results>/busy}"
           growing="true"
-          growingThreshold="25"
+          growingThreshold="20"
           growingScrollToLoad="true"
           mode="SingleSelectMaster"
-          noDataText="No locations found. Adjust your filters or sync from S/4HANA."
+          noDataText="No locations found."
           sticky="ColumnHeaders"
-          class="sapUiSmallMarginBegin sapUiSmallMarginEnd sapUiSmallMarginBottom"
+          class="sapUiTinyMarginBegin sapUiTinyMarginEnd"
           alternateRowColors="true">
 
-          <headerToolbar>
-            <Toolbar>
-              <core:Icon src="sap-icon://map" color="#1a5276" class="sapUiSmallMarginEnd" />
-              <Title text="Location Results" level="H5" />
-            </Toolbar>
-          </headerToolbar>
-
           <columns>
-            <Column width="28%">
+            <Column width="35%">
               <Text text="Location" />
             </Column>
-            <Column width="22%" minScreenWidth="Tablet" demandPopin="true">
-              <Text text="Township / Farm" />
-            </Column>
-            <Column width="12%" minScreenWidth="Tablet" demandPopin="true" hAlign="Center">
+            <Column width="15%" minScreenWidth="Tablet" demandPopin="true" hAlign="Center">
               <Text text="Ward" />
             </Column>
-            <Column width="14%" minScreenWidth="Desktop" demandPopin="true" hAlign="Center">
+            <Column width="20%" minScreenWidth="Tablet" demandPopin="true" hAlign="Center">
               <Text text="Region" />
             </Column>
             <Column width="10%" minScreenWidth="Desktop" demandPopin="true" hAlign="Center">
-              <Text text="Extension" />
+              <Text text="Ext." />
             </Column>
-            <Column width="14%" hAlign="End">
+            <Column width="20%" hAlign="End">
               <Text text="Action" />
             </Column>
           </columns>
@@ -176,10 +159,9 @@
               <cells>
                 <ObjectIdentifier
                   title="{results>LocationName}"
-                  text="{= ${results>Extension} ? 'Ext: ' + ${results>Extension} : '' }" />
-                <Text text="{results>LocationName}" />
+                  text="{= ${results>Extension} &amp;&amp; ${results>Extension} !== '0' ? 'Ext: ' + ${results>Extension} : '' }" />
                 <ObjectStatus text="{results>Ward}" state="Information" inverted="true" />
-                <ObjectStatus text="{results>Region}" state="Success" inverted="false" />
+                <ObjectStatus text="{results>Region}" state="Success" />
                 <Text text="{= ${results>Extension} === '0' ? '' : ${results>Extension} }" />
                 <Button
                   text="Select"
@@ -194,8 +176,8 @@
         </Table>
 
         <!-- Footer -->
-        <html:div style="text-align:center;padding:12px;color:#7f8c8d;font-size:0.75rem;border-top:1px solid #ecf0f1;margin:0 16px;">
-          City of Tshwane Metropolitan Municipality — GIS Location Service — Powered by SAP BTP
+        <html:div style="text-align:center;padding:8px;color:#95a5a6;font-size:0.7rem;border-top:1px solid #ecf0f1;margin:8px 0 0 0;">
+          City of Tshwane Metropolitan Municipality — Powered by SAP BTP
         </html:div>
 
       </VBox>

@@ -174,9 +174,15 @@ sap.ui.define([
         );
 
         // Redirect back to SC2 case after successful update
+        // Use window.top so the redirect escapes the SC2 iframe
         var redirectCaseId = sCaseId;
         setTimeout(function() {
-          window.location.href = SC2_BASE_URL + "/ui#Case-Display&/Cases('" + redirectCaseId + "')";
+          try {
+            window.top.location.href = SC2_BASE_URL + "/ui#Case-Display&/Cases('" + redirectCaseId + "')";
+          } catch (_) {
+            // Fallback if top is cross-origin sandboxed
+            window.location.href = SC2_BASE_URL + "/ui#Case-Display&/Cases('" + redirectCaseId + "')";
+          }
         }, 2000);
 
       } catch (e) {
