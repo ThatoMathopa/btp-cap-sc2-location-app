@@ -155,14 +155,26 @@ module.exports = cds.service.impl(async function (srv) {
 
     const fullName = buildFullName(locationName, extension);
 
-    // SC2 case extensions object — maps S4 location fields to SC2 extension field names
+    // SC2 case extensions object — maps S4 location fields to SC2 extension field names.
+    // Old address fields are explicitly cleared so stale data doesn't remain after a
+    // location change. The merge below will still preserve any other fields (e.g.
+    // MobileNumber, ZEMAIL) that SC2 validation requires to be present on every PATCH.
     const sc2Payload = {
       extensions: {
+        // Set location fields from S/4HANA selection
         TownshipFarmName : locationName,
         Suburb           : locationName,
         Ward             : ward      || '',
         Region           : region    || '',
-        Extension        : extension || ''
+        Extension        : extension || '',
+        // Clear old address fields so stale data doesn't remain
+        StreetNo         : '',
+        Street           : '',
+        owner            : '',
+        LISKey           : '',
+        ZERFNumber       : '',
+        ZGPSLatitude     : '',
+        ZGPSLongitude    : ''
       }
     };
 
