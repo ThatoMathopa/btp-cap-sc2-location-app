@@ -79,7 +79,7 @@
             </Toolbar>
           </headerToolbar>
           <content>
-            <l:Grid defaultSpan="XL3 L3 M6 S12" class="sapUiTinyMarginTop">
+            <l:Grid defaultSpan="XL4 L4 M6 S12" class="sapUiTinyMarginTop">
               <l:content>
                 <VBox>
                   <Label text="Search" design="Bold" labelFor="globalSearch" />
@@ -89,14 +89,6 @@
                     liveChange=".onLiveSearch"
                     search=".onLiveSearch"
                     showRefreshButton="false"
-                    width="100%" />
-                </VBox>
-                <VBox>
-                  <Label text="Location Name" design="Bold" labelFor="filterName" />
-                  <Input
-                    id="filterName"
-                    placeholder="Filter by name..."
-                    liveChange=".onLiveSearch"
                     width="100%" />
                 </VBox>
                 <VBox>
