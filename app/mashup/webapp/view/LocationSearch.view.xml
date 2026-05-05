@@ -116,12 +116,6 @@
           </content>
         </Panel>
 
-        <!-- Result count -->
-        <HBox alignItems="Center" class="sapUiTinyMarginBegin sapUiTinyMarginEnd sapUiTinyMarginTop sapUiTinyMarginBottom">
-          <core:Icon src="sap-icon://list" color="#1a5276" size="0.875rem" class="sapUiTinyMarginEnd" />
-          <Text id="resultCount" text="Loading locations..." />
-        </HBox>
-
         <!-- Locations table -->
         <Table
           id="locationsTable"
@@ -136,21 +130,30 @@
           class="sapUiTinyMarginBegin sapUiTinyMarginEnd"
           alternateRowColors="true">
 
+          <headerToolbar>
+            <Toolbar height="2.5rem">
+              <core:Icon src="sap-icon://map" color="#1a5276" class="sapUiTinyMarginEnd" />
+              <Title text="Location Results" level="H5" />
+              <ToolbarSpacer />
+              <Text id="resultCount" text="Loading locations..." class="sapUiTinyMarginEnd" />
+            </Toolbar>
+          </headerToolbar>
+
           <columns>
             <Column width="35%">
-              <Text text="Location" />
+              <Label text="Location Name" design="Bold" />
             </Column>
             <Column width="15%" minScreenWidth="Tablet" demandPopin="true" hAlign="Center">
-              <Text text="Ward" />
+              <Label text="Ward" design="Bold" />
             </Column>
             <Column width="20%" minScreenWidth="Tablet" demandPopin="true" hAlign="Center">
-              <Text text="Region" />
+              <Label text="Region" design="Bold" />
             </Column>
             <Column width="10%" minScreenWidth="Desktop" demandPopin="true" hAlign="Center">
-              <Text text="Ext." />
+              <Label text="Extension" design="Bold" />
             </Column>
             <Column width="20%" hAlign="End">
-              <Text text="Action" />
+              <Label text="Action" design="Bold" />
             </Column>
           </columns>
 
