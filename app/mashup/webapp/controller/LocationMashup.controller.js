@@ -173,26 +173,24 @@ sap.ui.define([
           { duration: 2000 }
         );
 
-        // Navigate SC2 back to the case and close this mashup.
-        // SC2 uses hash-based routing — changing only the hash triggers client-side
-        // navigation WITHOUT a full page refresh.
+        // Close this mashup and return SC2 to the case — without triggering a page refresh.
         var sCaseHash = "Case-Display&/Cases('" + sCaseId + "')";
-        var sCaseUrl  = SC2_BASE_URL + '/ui#' + sCaseHash;
         setTimeout(function() {
           if (window.opener && !window.opener.closed) {
-            // Opened as popup/new tab — update the hash in the SC2 shell (no reload), then close this tab
-            try { window.opener.location.hash = sCaseHash; } catch (_) {
-              try { window.opener.location.href = sCaseUrl; } catch (__) {}
-            }
+            // New window — SC2 is already on the case. Hash-only attempt (no reload);
+            // if cross-origin blocked, silently skip. Then close this window.
+            try { window.opener.location.hash = sCaseHash; } catch (_) {}
             try { window.close(); } catch (_) {}
           } else if (window.top !== window) {
-            // Embedded iframe — update hash in top frame (no reload)
-            try { window.top.location.hash = sCaseHash; } catch (_) {
-              window.parent.postMessage({ action: 'navigateTo', url: sCaseUrl }, SC2_BASE_URL);
+            // Embedded iframe — hash-only on top frame; postMessage with hash (not full URL) as fallback.
+            try {
+              window.top.location.hash = sCaseHash;
+            } catch (_) {
+              window.parent.postMessage({ action: 'navigateTo', hash: sCaseHash }, SC2_BASE_URL);
             }
           } else {
-            // Standalone tab fallback
-            window.location.hash = sCaseHash;
+            // Standalone tab — go back in history (no reload).
+            window.history.back();
           }
         }, 2000);
 
