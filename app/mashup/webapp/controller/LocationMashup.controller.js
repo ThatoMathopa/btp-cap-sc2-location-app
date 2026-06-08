@@ -177,9 +177,9 @@ sap.ui.define([
         var sCaseHash = "Case-Display&/Cases('" + sCaseId + "')";
         setTimeout(function() {
           if (window.opener && !window.opener.closed) {
-            // New window — SC2 is already on the case. Hash-only attempt (no reload);
-            // if cross-origin blocked, silently skip. Then close this window.
-            try { window.opener.location.hash = sCaseHash; } catch (_) {}
+            // New window — SC2 is already on the case. Just close; do NOT touch
+            // opener.location as even a hash change triggers Fiori's router and
+            // causes a component reload on first visit.
             try { window.close(); } catch (_) {}
           } else if (window.top !== window) {
             // Embedded iframe — hash-only on top frame; postMessage with hash (not full URL) as fallback.
