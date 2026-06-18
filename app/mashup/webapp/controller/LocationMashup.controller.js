@@ -173,28 +173,79 @@ sap.ui.define([
           { duration: 2000 }
         );
 
-        // Close this mashup and return SC2 to the case — without triggering a page refresh.
+        /* Navigate SC2 back to the case and close this mashup.
+        // SC2 uses hash-based routing — changing only the hash triggers client-side
+        // navigation WITHOUT a full page refresh.
         var sCaseHash = "Case-Display&/Cases('" + sCaseId + "')";
+        var sCaseUrl  = SC2_BASE_URL + '/ui#' + sCaseHash;
         setTimeout(function() {
           if (window.opener && !window.opener.closed) {
-            // New window — SC2 is already on the case. Just close; do NOT touch
-            // opener.location as even a hash change triggers Fiori's router and
-            // causes a component reload on first visit.
+            // Opened as popup/new tab — update the hash in the SC2 shell (no reload), then close this tab
+            try { window.opener.location.hash = sCaseHash; } catch (_) {
+              try { window.opener.location.href = sCaseUrl; } catch (__) {}
+            }
             try { window.close(); } catch (_) {}
           } else if (window.top !== window) {
-            // Embedded iframe — hash-only on top frame; postMessage with hash (not full URL) as fallback.
-            try {
-              window.top.location.hash = sCaseHash;
-            } catch (_) {
-              window.parent.postMessage({ action: 'navigateTo', hash: sCaseHash }, SC2_BASE_URL);
+            // Embedded iframe — update hash in top frame (no reload)
+            try { window.top.location.hash = sCaseHash; } catch (_) {
+              window.parent.postMessage({ action: 'navigateTo', url: sCaseUrl }, SC2_BASE_URL);
             }
           } else {
-            // Standalone tab — go back in history (no reload).
-            window.history.back();
+            // Standalone tab fallback
+            window.location.hash = sCaseHash;
           }
         }, 2000);
 
-      } catch (e) {
+      }*/ 
+
+     // Close this mashup and return SC2 to the case — without triggering a page refresh.
+
+        var sCaseHash = "Case-Display&/Cases('" + sCaseId + "')";
+
+        setTimeout(function() {
+
+          if (window.opener && !window.opener.closed) {
+
+            // New window — SC2 is already on the case. Just close; do NOT touch
+
+            // opener.location as even a hash change triggers Fiori's router and
+
+            // causes a component reload on first visit.
+
+            try { window.close(); } catch (_) {}
+
+          }
+ 
+else 
+
+{
+ 
+    window.parent.postMessage({
+
+        type: "sap.crm.mashup.callback",
+
+        payload: {           
+
+            "locationName": sLocationName, 
+
+            "ward": sWard,
+
+            "region": sRegion
+
+        }
+
+}, SC2_BASE_URL);
+ 
+          }
+
+        }, 2000);
+
+      }
+
+ 
+     
+     
+        catch (e) {
         const sMsg = e?.error?.message || e?.message || this._i18n('updateError');
         this._setStatus(this._i18n('updateErrorDetail', [sMsg]), 'Error');
         MessageBox.error(sMsg, { title: this._i18n('updateErrorTitle') });
