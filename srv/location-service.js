@@ -4,7 +4,7 @@ const cds  = require('@sap/cds');
 const LOG  = cds.log('location-srv');
 
 // CPI endpoint that proxies S/4HANA ZCDS_GIS_CDS OData service
-const GIS_URL = 'https://cotdevcode.it-cpi033-rt.cfapps.eu10-005.hana.ondemand.com/http/Dev/S4/OData/GetGISData/ZCDS_GIS';
+const GIS_URL = 'https://cotprodcode.it-cpi033-rt.cfapps.eu10-005.hana.ondemand.com/http/S4/OData/GetGISData/ZCDS_GIS';
 
 function buildFullName(locationName = '', extension = '') {
   const n = (locationName || '').trim();
