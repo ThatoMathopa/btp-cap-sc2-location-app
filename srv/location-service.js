@@ -85,10 +85,10 @@ function isCleanRecord(r, now) {
 
 module.exports = cds.service.impl(async function (srv) {
 
-  // SC2 connector — resolved from Case_Object BTP destination
+  // SC2 connector — resolved from C4CV2  BTP destination
   let SC2;
   try { SC2 = await cds.connect.to('SC2_DESTINATION'); }
-  catch (e) { LOG.warn('SC2_DESTINATION (Case_Object) not available:', e.message); }
+  catch (e) { LOG.warn('SC2_DESTINATION (C4CV2) not available:', e.message); }
 
   // ── ACTION: searchLocations ───────────────────────────────────────────────
   srv.on('searchLocations', async (req) => {
