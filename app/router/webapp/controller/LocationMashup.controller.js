@@ -7,7 +7,7 @@ sap.ui.define([
 ], (Controller, JSONModel, MessageBox, MessageToast, Item) => {
   'use strict';
 
-  const SC2_BASE_URL = 'https://my1001219.de1.test.crm.cloud.sap';
+  const SC2_BASE_URL = 'https://my1002936.de1.crm.cloud.sap';
 
   return Controller.extend('com.company.locationmashup.controller.LocationMashup', {
 
@@ -173,7 +173,7 @@ sap.ui.define([
           { duration: 2000 }
         );
 
-        // Navigate SC2 back to the case and close this mashup.
+        /* Navigate SC2 back to the case and close this mashup.
         // SC2 uses hash-based routing — changing only the hash triggers client-side
         // navigation WITHOUT a full page refresh.
         var sCaseHash = "Case-Display&/Cases('" + sCaseId + "')";
@@ -196,7 +196,56 @@ sap.ui.define([
           }
         }, 2000);
 
-      } catch (e) {
+      }*/ 
+
+     // Close this mashup and return SC2 to the case — without triggering a page refresh.
+
+        var sCaseHash = "Case-Display&/Cases('" + sCaseId + "')";
+
+        setTimeout(function() {
+
+          if (window.opener && !window.opener.closed) {
+
+            // New window — SC2 is already on the case. Just close; do NOT touch
+
+            // opener.location as even a hash change triggers Fiori's router and
+
+            // causes a component reload on first visit.
+
+            try { window.close(); } catch (_) {}
+
+          }
+ 
+else 
+
+{
+ 
+    window.parent.postMessage({
+
+        type: "sap.crm.mashup.callback",
+
+        payload: {           
+
+            "locationName": sLocationName, 
+
+            "ward": sWard,
+
+            "region": sRegion
+
+        }
+
+}, SC2_BASE_URL);
+ 
+          }
+
+        }, 2000);
+
+      }
+
+ 
+     
+     
+        catch (e) {
         const sMsg = e?.error?.message || e?.message || this._i18n('updateError');
         this._setStatus(this._i18n('updateErrorDetail', [sMsg]), 'Error');
         MessageBox.error(sMsg, { title: this._i18n('updateErrorTitle') });
