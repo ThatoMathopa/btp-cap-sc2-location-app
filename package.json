@@ -28,7 +28,7 @@
       "SC2_DESTINATION": {
         "kind": "rest",
         "credentials": {
-          "destination": "Case_Object"
+          "destination": "C4CV2"
         }
       },
       "db": {
