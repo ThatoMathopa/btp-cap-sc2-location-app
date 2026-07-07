@@ -7,7 +7,7 @@ sap.ui.define([
 ], (Controller, JSONModel, MessageBox, MessageToast, Item) => {
   'use strict';
 
-  const SC2_BASE_URL = 'https://my1001219.de1.test.crm.cloud.sap';
+  const SC2_BASE_URL = 'https://my1002936.de1.crm.cloud.sap';
 
   return Controller.extend('com.company.locationmashup.controller.LocationMashup', {
 
