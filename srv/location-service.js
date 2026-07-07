@@ -168,13 +168,13 @@ module.exports = cds.service.impl(async function (srv) {
         Region           : region    || '',
         Extension        : extension || '',
         // Clear old address fields so stale data doesn't remain
-        StreetNo         : '',
+        /*StreetNo         : '',
         Street           : '',
         owner            : '',
         LISKey           : '',
         ZERFNumber       : '',
         ZGPSLatitude     : '',
-        ZGPSLongitude    : ''
+        ZGPSLongitude    : ''*/
       }
     };
 
