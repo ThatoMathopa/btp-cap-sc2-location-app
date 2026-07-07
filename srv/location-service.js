@@ -190,7 +190,7 @@ module.exports = cds.service.impl(async function (srv) {
 
     try {
       const { executeHttpRequest } = require('@sap-cloud-sdk/http-client');
-      const destination = { destinationName: 'Case_Object' };
+      const destination = { destinationName: 'C4CV2' };
       const casePath    = `/sap/c4c/api/v1/case-service/cases/${caseId}`;
 
       // Step 1: GET the case — read ETag AND existing extension values so we
